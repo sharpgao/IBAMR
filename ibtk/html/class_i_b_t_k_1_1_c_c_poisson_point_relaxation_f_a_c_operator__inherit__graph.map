@@ -1,0 +1,4 @@
+<map id="IBTK::CCPoissonPointRelaxationFACOperator" name="IBTK::CCPoissonPointRelaxationFACOperator">
+<area shape="rect" id="node2" href="$class_i_b_t_k_1_1_poisson_f_a_c_preconditioner_strategy.html" title="Class PoissonFACPreconditionerStrategy is an abstract FACPreconditionerStrategy implementing many of ..." alt="" coords="8,161,213,205"/>
+<area shape="rect" id="node4" href="$class_i_b_t_k_1_1_f_a_c_preconditioner_strategy.html" title="Class FACPreconditionerStrategy provides an interface for specifying the problem&#45;specific operations ..." alt="" coords="8,83,213,111"/>
+</map>

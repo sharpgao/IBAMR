@@ -1,0 +1,29 @@
+\form#0:$Ax=b$
+\form#1:$x$
+\form#2:$ L = C I + \nabla \cdot D \nabla$
+\form#3:$ \mbox{$L u$} = \mbox{$(C I + \nabla \cdot D \nabla) u$} = f $
+\form#4:$ (C I + \nabla \cdot D \nabla ) u = f $
+\form#5:$C$
+\form#6:$D$
+\form#7:$u$
+\form#8:$f$
+\form#9:\[ (C I + \nabla \cdot D \nabla) u = f \]
+\form#10:$ C $
+\form#11:$ D $
+\form#12:$ f $
+\form#13:$ u $
+\form#14:$ -\nabla^2 u = f $
+\form#15:$ y=F[x] $
+\form#16:$ z=F[x]+y $
+\form#17:$y=F[x]$
+\form#18:$z=F[x]+y$
+\form#19:$F[x]=b$
+\form#20:$ F'[x]v $
+\form#21:$ y=Ax $
+\form#22:$ z=Ax+y $
+\form#23:$ y=A^{T} x $
+\form#24:$ z=A^{T}x+y $
+\form#25:$ F[x]=b $
+\form#26:$F[x]$
+\form#27:$J[x] = F'[x]$
+\form#28:$y=Ax$

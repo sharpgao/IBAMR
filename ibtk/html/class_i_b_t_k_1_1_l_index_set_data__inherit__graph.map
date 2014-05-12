@@ -1,0 +1,6 @@
+<map id="IBTK::LIndexSetData&lt; T &gt;" name="IBTK::LIndexSetData&lt; T &gt;">
+<area shape="rect" id="node2" href="$class_i_b_t_k_1_1_l_set_data.html" title="Class LSetData is a specialization of the templated class SAMRAI::pdat::IndexData that provides acces..." alt="" coords="37,355,176,383"/>
+<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1pdat_1_1IndexData.html" title="SAMRAI::pdat::IndexData\l\&lt; NDIM, LSet\&lt; T \&gt;, SAMRAI\l::pdat::CellGeometry\&lt; NDIM \&gt; \&gt;" alt="" coords="5,243,208,303"/>
+<area shape="rect" id="node6" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1hier_1_1PatchData.html" title="SAMRAI::hier::PatchData\l\&lt; DIM \&gt;" alt="" coords="48,6,213,50"/>
+<area shape="rect" id="node8" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1pdat_1_1IndexData.html" title="SAMRAI::pdat::IndexData\l\&lt; DIM, TYPE, BOX_GEOMETRY \&gt;" alt="" coords="123,102,349,146"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="IBTK::LaplaceOperator" name="IBTK::LaplaceOperator">
+<area shape="rect" id="node9" href="$class_i_b_t_k_1_1_c_c_laplace_operator.html" title="Class CCLaplaceOperator is a concrete LaplaceOperator which implements a globally second&#45;order accura..." alt="" coords="5,315,176,343"/>
+<area shape="rect" id="node11" href="$class_i_b_t_k_1_1_s_c_laplace_operator.html" title="Class SCLaplaceOperator is a concrete LaplaceOperator which implements a globally second&#45;order accura..." alt="" coords="200,315,371,343"/>
+<area shape="rect" id="node2" href="$class_i_b_t_k_1_1_linear_operator.html" title="Class LinearOperator provides an abstract interface for the specification of linear operators to comp..." alt="" coords="119,161,257,189"/>
+<area shape="rect" id="node4" href="$class_i_b_t_k_1_1_general_operator.html" title="Class GeneralOperator provides an abstract interface for the specification of general operators to co..." alt="" coords="113,83,263,111"/>
+</map>

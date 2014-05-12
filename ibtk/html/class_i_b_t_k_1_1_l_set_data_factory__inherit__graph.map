@@ -1,0 +1,6 @@
+<map id="IBTK::LSetDataFactory&lt; T &gt;" name="IBTK::LSetDataFactory&lt; T &gt;">
+<area shape="rect" id="node10" href="$class_i_b_t_k_1_1_l_index_set_data_factory.html" title="Class LIndexSetPatchDataFactory provides a SAMRAI::hier::PatchDataFactory class corresponding to patc..." alt="" coords="1209,23,1420,51"/>
+<area shape="rect" id="node2" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1pdat_1_1IndexDataFactory.html" title="SAMRAI::pdat::IndexDataFactory\l\&lt; NDIM, LSet\&lt; T \&gt;, SAMRAI\l::pdat::CellGeometry\&lt; NDIM \&gt; \&gt;" alt="" coords="713,7,924,67"/>
+<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1hier_1_1PatchDataFactory.html" title="SAMRAI::hier::PatchDataFactory\l\&lt; DIM \&gt;" alt="" coords="7,5,212,49"/>
+<area shape="rect" id="node6" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1pdat_1_1IndexDataFactory.html" title="SAMRAI::pdat::IndexDataFactory\l\&lt; DIM, TYPE, BOX_GEOMETRY \&gt;" alt="" coords="265,43,492,87"/>
+</map>
