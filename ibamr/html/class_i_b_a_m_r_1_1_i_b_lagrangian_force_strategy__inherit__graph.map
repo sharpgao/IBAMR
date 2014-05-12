@@ -1,0 +1,4 @@
+<map id="IBAMR::IBLagrangianForceStrategy" name="IBAMR::IBLagrangianForceStrategy">
+<area shape="rect" id="node5" href="$class_i_b_a_m_r_1_1_i_b_lagrangian_force_strategy_set.html" title="Class IBLagrangianForceStrategySet is a utility class that allows multiple IBLagrangianForceStrategy ..." alt="" coords="5,177,181,221"/>
+<area shape="rect" id="node7" href="$class_i_b_a_m_r_1_1_i_b_standard_force_gen.html" title="Class IBStandardForceGen is a concrete IBLagrangianForceStrategy that is intended to be used in conju..." alt="" coords="205,185,395,213"/>
+</map>

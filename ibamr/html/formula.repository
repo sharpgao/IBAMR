@@ -1,0 +1,38 @@
+\form#0:$ Q $
+\form#1:$ \kappa $
+\form#2:$ \lambda $
+\form#3:$ F $
+\form#4:\[ \frac{dQ}{dt} + (\vec{u}^{\mbox{\scriptsize ADV}} \cdot \nabla)Q = F, \]
+\form#5:$Q$
+\form#6:$\vec{u}^{\mbox{\scriptsize ADV}}$
+\form#7:$F$
+\form#8:\[ \frac{dQ}{dt} + \nabla \cdot (\vec{u}^{\mbox{\scriptsize ADV}} Q) = F. \]
+\form#9:$\vec{u}$
+\form#10:$ \vec{N}^{n+\frac{1}{2}} = \vec{u}^{\mbox{\scriptsize ADV},n+\frac{1}{2}} \cdot \nabla q^{n+\frac{1}{2}} $
+\form#11:$ \vec{f} $
+\form#12:$ q $
+\form#13:$ \vec{u}^{\mbox{\scriptsize ADV}} $
+\form#14:\begin{eqnarray*} f_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} &=& \Delta t \, *u_{i+\frac{1}{2},j,k}^{\mbox{\scriptsize ADV},n+\frac{1}{2}} \, *q_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} \\ f_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} &=& \Delta t \, *v_{i,j+\frac{1}{2},k}^{\mbox{\scriptsize ADV},n+\frac{1}{2}} \, *q_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} \\ f_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} &=& \Delta t \, *w_{i,j,k+\frac{1}{2}}^{\mbox{\scriptsize ADV},n+\frac{1}{2}} \, *q_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} \end{eqnarray*}
+\form#15:$ \vec{u}^{\mbox{\scriptsize ADV}} = (u^{\mbox{\scriptsize ADV}},v^{\mbox{\scriptsize ADV}},w^{\mbox{\scriptsize ADV}}) $
+\form#16:\[ \frac{dQ}{dt} + (\vec{u}^{\mbox{\scriptsize ADV}} \cdot \nabla)Q = 0, \]
+\form#17:$ \vec{V} $
+\form#18:\[ \frac{d\vec{V}}{dt} + (\vec{u}^{\mbox{\scriptsize ADV}} \cdot \nabla)\vec{V} = 0, \]
+\form#19:\[ \frac{d\vec{V}}{dt} + (\vec{u}^{\mbox{\scriptsize ADV}} \cdot \nabla)\vec{V} = *\vec{F}, \]
+\form#20:\[ \frac{dQ}{dt} + \nabla \cdot (\vec{u}^{\mbox{\scriptsize ADV}} Q) = F - Q \nabla \cdot *\vec{u}^{\mbox{\scriptsize ADV}}, \]
+\form#21:\[ \frac{dQ}{dt} + (\vec{u}^{\mbox{\scriptsize ADV}} \cdot \nabla) Q = F. \]
+\form#22:$y=F[x]$
+\form#23:$ k $
+\form#24:$ l $
+\form#25:\[ \vec{F}_k = \kappa_{k,l} \left( \|\vec{X}_{l} - \vec{X}_{k}\| - r_{k,l} \right) *\frac{\vec{X}_{l} - \vec{X}_{k}}{\|\vec{X}_{l} - \vec{X}_{k}\|}, \]
+\form#26:\[ \vec{F}_l = \kappa_{k,l} \left( \|\vec{X}_{l} - \vec{X}_{k}\| - r_{k,l} \right) *\frac{\vec{X}_{k} - \vec{X}_{l}}{\|\vec{X}_{l} - \vec{X}_{k}\|} = - \vec{F}_k, \]
+\form#27:$ \kappa_{k,l} $
+\form#28:$ r_{k,l} $
+\form#29:$ T_{k,l} $
+\form#30:\[ T_{k,l} = \kappa_{k,l} \left( \|\vec{X}_{l} - \vec{X}_{k}\| - r_{k,l} \right). \]
+\form#31:\[ \vec{F}_k = T_{k,l} \frac{\vec{X}_{l} - \vec{X}_{k}}{\|\vec{X}_{l} - \vec{X}_{k}\|} \]
+\form#32:\[ \vec{F}_l = T_{k,l} \frac{\vec{X}_{k} - \vec{X}_{l}}{\|\vec{X}_{k} - \vec{X}_{l}\|}. \]
+\form#33:$ \eta $
+\form#34:$ b = (1-a) $
+\form#35:$a$
+\form#36:$b$
+\form#37:$Ax=b$

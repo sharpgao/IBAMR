@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_l_init_strategy.html" title="IBTK::LInitStrategy" alt="" coords="5,30,131,58"/>
+<area shape="rect" id="node3" href="$class_i_b_a_m_r_1_1_i_b_standard_initializer.html" title="Class IBStandardInitializer is a concrete LInitStrategy that initializes the configuration of one or ..." alt="" coords="180,5,359,33"/>
+<area shape="rect" id="node5" href="$class_i_b_a_m_r_1_1_i_m_p_initializer.html" title="Class IMPInitializer is a concrete LInitStrategy that initializes the configuration of one or more La..." alt="" coords="200,55,339,83"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1solv_1_1RobinBcCoefStrategy.html" title="SAMRAI::solv::RobinBcCoef\lStrategy\&lt; NDIM \&gt;" alt="" coords="5,63,189,107"/>
+<area shape="rect" id="node3" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_extended_robin_bc_coef_strategy.html" title="IBTK::ExtendedRobinBcCoef\lStrategy" alt="" coords="237,63,424,107"/>
+<area shape="rect" id="node5" href="$class_i_b_a_m_r_1_1_i_n_s_intermediate_velocity_bc_coef.html" title="Class INSIntermediateVelocityBcCoef is a concrete SAMRAI::solv::RobinBcCoefStrategy that is used to s..." alt="" coords="473,5,673,49"/>
+<area shape="rect" id="node7" href="$class_i_b_a_m_r_1_1_i_n_s_projection_bc_coef.html" title="Class INSIntermediateVelocityBcCoef is a concrete SAMRAI::solv::RobinBcCoefStrategy that is used to s..." alt="" coords="480,71,667,99"/>
+<area shape="rect" id="node9" href="$class_i_b_a_m_r_1_1_stokes_bc_coef_strategy.html" title="Class StokesBcCoefStrategy is a subclass of the abstract base class IBTK::ExtendedRobinBcCoefStrategy..." alt="" coords="475,122,672,150"/>
+<area shape="rect" id="node11" href="$class_i_b_a_m_r_1_1_i_n_s_collocated_velocity_bc_coef.html" title="Class INSCollocatedVelocityBcCoef is a concrete StokesBcCoefStrategy that is used to specify velocity..." alt="" coords="727,47,919,91"/>
+<area shape="rect" id="node13" href="$class_i_b_a_m_r_1_1_i_n_s_staggered_pressure_bc_coef.html" title="Class INSStaggeredPressureBcCoef is a concrete StokesBcCoefStrategy that is used to specify pressure ..." alt="" coords="724,114,921,158"/>
+<area shape="rect" id="node15" href="$class_i_b_a_m_r_1_1_i_n_s_staggered_velocity_bc_coef.html" title="Class INSStaggeredVelocityBcCoef is a concrete StokesBcCoefStrategy that is used to specify velocity ..." alt="" coords="727,181,919,225"/>
+</map>
