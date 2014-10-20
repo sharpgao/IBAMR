@@ -1,5 +1,5 @@
 <map id="IBTK::KrylovLinearSolverPoissonSolverInterface" name="IBTK::KrylovLinearSolverPoissonSolverInterface">
 <area shape="rect" id="node9" href="$class_i_b_t_k_1_1_p_e_t_sc_krylov_poisson_solver.html" title="Class PETScKrylovPoissonSolver is an extension of class PETScKrylovLinearSolver that provides an impl..." alt="" coords="5,331,181,375"/>
-<area shape="rect" id="node2" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers. " alt="" coords="25,161,161,189"/>
+<area shape="rect" id="node2" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers." alt="" coords="25,161,161,189"/>
 <area shape="rect" id="node4" href="$class_i_b_t_k_1_1_general_solver.html" title="Class GeneralSolver provides an abstract interface for the implementation of linear or nonlinear solv..." alt="" coords="25,83,161,111"/>
 </map>

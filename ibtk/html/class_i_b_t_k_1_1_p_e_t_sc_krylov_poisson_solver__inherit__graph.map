@@ -3,6 +3,6 @@
 <area shape="rect" id="node4" href="$class_i_b_t_k_1_1_krylov_linear_solver.html" title="Class KrylovLinearSolver provides an abstract interface for the implementation of Krylov subspace sol..." alt="" coords="28,238,188,266"/>
 <area shape="rect" id="node6" href="$class_i_b_t_k_1_1_linear_solver.html" title="Class LinearSolver provides an abstract interface for the implementation of solvers for linear proble..." alt="" coords="57,161,183,189"/>
 <area shape="rect" id="node8" href="$class_i_b_t_k_1_1_general_solver.html" title="Class GeneralSolver provides an abstract interface for the implementation of linear or nonlinear solv..." alt="" coords="129,83,265,111"/>
-<area shape="rect" id="node14" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers. " alt="" coords="231,161,367,189"/>
+<area shape="rect" id="node14" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers." alt="" coords="231,161,367,189"/>
 <area shape="rect" id="node12" href="$class_i_b_t_k_1_1_krylov_linear_solver_poisson_solver_interface.html" title="Class KrylovLinearSolverPoissonSolverInterface provides an interface for KrylovLinearSolvers that are..." alt="" coords="229,315,389,359"/>
 </map>

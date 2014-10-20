@@ -1,4 +1,4 @@
 <map id="IBAMR::StaggeredStokesBoxRelaxationFACOperator" name="IBAMR::StaggeredStokesBoxRelaxationFACOperator">
 <area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_staggered_stokes_f_a_c_preconditioner_strategy.html" title="Class StaggeredStokesFACPreconditionerStrategy is an abstract FACPreconditionerStrategy implementing ..." alt="" coords="5,83,275,127"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_f_a_c_preconditioner_strategy.html" title="IBTK::FACPreconditionerStrategy" alt="" coords="37,6,243,34"/>
+<area shape="rect" id="node4" href="ibtk.tag$class_i_b_t_k_1_1_f_a_c_preconditioner_strategy.html" title="IBTK::FACPreconditionerStrategy" alt="" coords="37,6,243,34"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="IBTK::RobinPhysBdryPatchStrategy" name="IBTK::RobinPhysBdryPatchStrategy">
 <area shape="rect" id="node7" href="$class_i_b_t_k_1_1_cart_cell_robin_phys_bdry_op.html" title="Class CartCellRobinPhysBdryOp is a concrete SAMRAI::xfer::RefinePatchStrategy for setting Robin bound..." alt="" coords="5,307,216,335"/>
 <area shape="rect" id="node9" href="$class_i_b_t_k_1_1_cart_side_robin_phys_bdry_op.html" title="Class CartSideRobinPhysBdryOp is a concrete SAMRAI::xfer::RefinePatchStrategy for setting Robin bound..." alt="" coords="240,307,453,335"/>
-<area shape="rect" id="node2" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; NDIM \&gt;" alt="" coords="141,115,315,159"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; DIM \&gt;" alt="" coords="141,6,315,50"/>
+<area shape="rect" id="node2" href="samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; NDIM \&gt;" alt="" coords="141,115,315,159"/>
+<area shape="rect" id="node4" href="samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; DIM \&gt;" alt="" coords="141,6,315,50"/>
 </map>

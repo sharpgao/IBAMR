@@ -1,5 +1,5 @@
 <map id="IBTK::CartSideDoubleQuadraticCFInterpolation" name="IBTK::CartSideDoubleQuadraticCFInterpolation">
 <area shape="rect" id="node2" href="$class_i_b_t_k_1_1_coarse_fine_boundary_refine_patch_strategy.html" title="Class CoarseFineBoundaryRefinePatchStrategy is a subclass of the abstract base class SAMRAI::xfer::Re..." alt="" coords="17,211,193,255"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; NDIM \&gt;" alt="" coords="19,115,192,159"/>
-<area shape="rect" id="node6" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; DIM \&gt;" alt="" coords="19,6,192,50"/>
+<area shape="rect" id="node4" href="samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; NDIM \&gt;" alt="" coords="19,115,192,159"/>
+<area shape="rect" id="node6" href="samrai.tag$classSAMRAI_1_1xfer_1_1RefinePatchStrategy.html" title="SAMRAI::xfer::RefinePatch\lStrategy\&lt; DIM \&gt;" alt="" coords="19,6,192,50"/>
 </map>

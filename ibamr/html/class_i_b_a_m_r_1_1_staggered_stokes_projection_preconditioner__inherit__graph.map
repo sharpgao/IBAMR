@@ -1,6 +1,6 @@
 <map id="IBAMR::StaggeredStokesProjectionPreconditioner" name="IBAMR::StaggeredStokesProjectionPreconditioner">
 <area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_staggered_stokes_block_preconditioner.html" title="Class StaggeredStokesBlockPreconditioner is an abstract base class for Stokes solvers that are implem..." alt="" coords="63,161,260,205"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_linear_solver.html" title="IBTK::LinearSolver" alt="" coords="5,83,131,111"/>
-<area shape="rect" id="node6" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_general_solver.html" title="IBTK::GeneralSolver" alt="" coords="93,6,229,34"/>
-<area shape="rect" id="node8" href="$class_i_b_a_m_r_1_1_staggered_stokes_solver.html" title="Class StaggeredStokesSolver is an abstract base class for staggered&#45;grid Stokes solvers. " alt="" coords="155,83,357,111"/>
+<area shape="rect" id="node4" href="ibtk.tag$class_i_b_t_k_1_1_linear_solver.html" title="IBTK::LinearSolver" alt="" coords="5,83,131,111"/>
+<area shape="rect" id="node6" href="ibtk.tag$class_i_b_t_k_1_1_general_solver.html" title="IBTK::GeneralSolver" alt="" coords="93,6,229,34"/>
+<area shape="rect" id="node8" href="$class_i_b_a_m_r_1_1_staggered_stokes_solver.html" title="Class StaggeredStokesSolver is an abstract base class for staggered&#45;grid Stokes solvers." alt="" coords="155,83,357,111"/>
 </map>

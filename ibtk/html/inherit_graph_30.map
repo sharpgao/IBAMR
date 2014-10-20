@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1solv_1_1RobinBcCoefStrategy.html" title="SAMRAI::solv::RobinBcCoef\lStrategy\&lt; NDIM \&gt;" alt="" coords="5,34,189,78"/>
+<area shape="rect" id="node1" href="samrai.tag$classSAMRAI_1_1solv_1_1RobinBcCoefStrategy.html" title="SAMRAI::solv::RobinBcCoef\lStrategy\&lt; NDIM \&gt;" alt="" coords="5,34,189,78"/>
 <area shape="rect" id="node3" href="$class_i_b_t_k_1_1_extended_robin_bc_coef_strategy.html" title="Class ExtendedRobinBcCoefStrategy is a subclass of the abstract base class SAMRAI::solv::RobinBcCoefS..." alt="" coords="241,5,428,49"/>
 <area shape="rect" id="node5" href="$class_i_b_t_k_1_1mu_parser_robin_bc_coefs.html" title="Class muParserRobinBcCoefs is an implementation of the strategy class SAMRAI::solv::RobinBcCoefStrate..." alt="" coords="239,71,431,99"/>
 </map>

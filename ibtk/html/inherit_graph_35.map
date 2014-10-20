@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1xfer_1_1VariableFillPattern.html" title="SAMRAI::xfer::VariableFill\lPattern\&lt; NDIM \&gt;" alt="" coords="5,123,171,167"/>
+<area shape="rect" id="node1" href="samrai.tag$classSAMRAI_1_1xfer_1_1VariableFillPattern.html" title="SAMRAI::xfer::VariableFill\lPattern\&lt; NDIM \&gt;" alt="" coords="5,123,171,167"/>
 <area shape="rect" id="node3" href="$class_i_b_t_k_1_1_cell_no_corners_fill_pattern.html" title="Class CellCellNoCornersFillPattern is a concrete implementation of the abstract base class SAMRAI::xf..." alt="" coords="228,5,417,33"/>
 <area shape="rect" id="node5" href="$class_i_b_t_k_1_1_edge_synch_copy_fill_pattern.html" title="Class EdgeCellSynchCopyFillPattern is a concrete implementation of the abstract base class SAMRAI::xf..." alt="" coords="220,55,425,83"/>
 <area shape="rect" id="node7" href="$class_i_b_t_k_1_1_face_synch_copy_fill_pattern.html" title="Class FaceCellSynchCopyFillPattern is a concrete implementation of the abstract base class SAMRAI::xf..." alt="" coords="220,106,425,134"/>

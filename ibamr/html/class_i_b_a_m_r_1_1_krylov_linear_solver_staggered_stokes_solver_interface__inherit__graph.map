@@ -1,5 +1,5 @@
 <map id="IBAMR::KrylovLinearSolverStaggeredStokesSolverInterface" name="IBAMR::KrylovLinearSolverStaggeredStokesSolverInterface">
 <area shape="rect" id="node7" href="$class_i_b_a_m_r_1_1_p_e_t_sc_krylov_staggered_stokes_solver.html" title="Class PETScKrylovStaggeredStokesSolver is an extension of class PETScKrylovLinearSolver that provides..." alt="" coords="5,254,208,298"/>
-<area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_staggered_stokes_solver.html" title="Class StaggeredStokesSolver is an abstract base class for staggered&#45;grid Stokes solvers. " alt="" coords="5,83,208,111"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_general_solver.html" title="IBTK::GeneralSolver" alt="" coords="39,6,175,34"/>
+<area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_staggered_stokes_solver.html" title="Class StaggeredStokesSolver is an abstract base class for staggered&#45;grid Stokes solvers." alt="" coords="5,83,208,111"/>
+<area shape="rect" id="node4" href="ibtk.tag$class_i_b_t_k_1_1_general_solver.html" title="IBTK::GeneralSolver" alt="" coords="39,6,175,34"/>
 </map>

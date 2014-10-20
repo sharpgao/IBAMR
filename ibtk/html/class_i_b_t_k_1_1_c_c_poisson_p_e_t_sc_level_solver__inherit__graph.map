@@ -2,5 +2,5 @@
 <area shape="rect" id="node2" href="$class_i_b_t_k_1_1_p_e_t_sc_level_solver.html" title="Class PETScLevelSolver is an abstract LinearSolver for solving systems of linear equations on a singl..." alt="" coords="5,238,165,266"/>
 <area shape="rect" id="node4" href="$class_i_b_t_k_1_1_linear_solver.html" title="Class LinearSolver provides an abstract interface for the implementation of solvers for linear proble..." alt="" coords="40,161,165,189"/>
 <area shape="rect" id="node6" href="$class_i_b_t_k_1_1_general_solver.html" title="Class GeneralSolver provides an abstract interface for the implementation of linear or nonlinear solv..." alt="" coords="84,83,220,111"/>
-<area shape="rect" id="node10" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers. " alt="" coords="189,238,325,266"/>
+<area shape="rect" id="node10" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers." alt="" coords="189,238,325,266"/>
 </map>

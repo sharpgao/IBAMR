@@ -36,3 +36,5 @@
 \form#35:$a$
 \form#36:$b$
 \form#37:$Ax=b$
+\form#38:$ \theta_n = \theta_{n-1} + \omega_{n-1} \triangle t $
+\form#39:$ \phi $

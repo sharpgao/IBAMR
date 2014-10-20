@@ -1,6 +1,4 @@
 <map id="IBAMR::INSCollocatedVelocityBcCoef" name="IBAMR::INSCollocatedVelocityBcCoef">
-<area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_stokes_bc_coef_strategy.html" title="Class StokesBcCoefStrategy is a subclass of the abstract base class IBTK::ExtendedRobinBcCoefStrategy..." alt="" coords="5,307,203,335"/>
-<area shape="rect" id="node4" href="/Users/griffith/code/IBAMR/doc/ibtk.tag$class_i_b_t_k_1_1_extended_robin_bc_coef_strategy.html" title="IBTK::ExtendedRobinBcCoef\lStrategy" alt="" coords="11,211,197,255"/>
-<area shape="rect" id="node6" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1solv_1_1RobinBcCoefStrategy.html" title="SAMRAI::solv::RobinBcCoef\lStrategy\&lt; NDIM \&gt;" alt="" coords="12,115,196,159"/>
-<area shape="rect" id="node8" href="/Users/griffith/code/IBAMR/doc/samrai.tag$classSAMRAI_1_1solv_1_1RobinBcCoefStrategy.html" title="SAMRAI::solv::RobinBcCoef\lStrategy\&lt; DIM \&gt;" alt="" coords="12,6,196,50"/>
+<area shape="rect" id="node2" href="$class_i_b_a_m_r_1_1_stokes_bc_coef_strategy.html" title="Class StokesBcCoefStrategy is a subclass of the abstract base class IBTK::ExtendedRobinBcCoefStrategy..." alt="" coords="5,193,203,221"/>
+<area shape="rect" id="node4" href="ibtk.tag$class_i_b_t_k_1_1_extended_robin_bc_coef_strategy.html" title="IBTK::ExtendedRobinBcCoef\lStrategy" alt="" coords="11,99,197,143"/>
 </map>

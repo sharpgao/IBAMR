@@ -1,5 +1,5 @@
 <map id="IBTK::SCPoissonHypreLevelSolver" name="IBTK::SCPoissonHypreLevelSolver">
 <area shape="rect" id="node2" href="$class_i_b_t_k_1_1_linear_solver.html" title="Class LinearSolver provides an abstract interface for the implementation of solvers for linear proble..." alt="" coords="5,161,131,189"/>
 <area shape="rect" id="node4" href="$class_i_b_t_k_1_1_general_solver.html" title="Class GeneralSolver provides an abstract interface for the implementation of linear or nonlinear solv..." alt="" coords="77,83,213,111"/>
-<area shape="rect" id="node8" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers. " alt="" coords="155,161,291,189"/>
+<area shape="rect" id="node8" href="$class_i_b_t_k_1_1_poisson_solver.html" title="Class PoissonSolver is an abstract base class for Poisson solvers." alt="" coords="155,161,291,189"/>
 </map>
