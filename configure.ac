@@ -77,9 +77,6 @@ AC_CONFIG_FILES([
   Makefile
   config/make.inc
   examples/Makefile
-  examples/ConstraintIB/Makefile
-  examples/ConstraintIB/eel2d/Makefile
-  examples/ConstraintIB/eel3d/Makefile  
   examples/IB/Makefile
   examples/IB/explicit/Makefile
   examples/IB/explicit/ex0/Makefile

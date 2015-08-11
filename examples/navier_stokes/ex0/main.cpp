@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
 }
 
 void output_data(const boost::shared_ptr<PatchHierarchy>& patch_hierarchy,
-                 const boost::shared_ptr<INSHierarchyIntegrator>& ins_integrator,
+                 const boost::shared_ptr<INSHierarchyIntegrator>& /*ins_integrator*/,
                  const int iteration_num,
                  const double loop_time,
                  const string& data_dump_dirname)

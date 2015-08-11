@@ -1053,6 +1053,53 @@ void AdvectorPredictorCorrectorHyperbolicPatchOps::setPhysicalBoundaryConditions
     return;
 }
 
+IntVector AdvectorPredictorCorrectorHyperbolicPatchOps::getRefineOpStencilWidth(const Dimension& dim) const
+{
+    static const int CELLG = 4;
+    return IntVector(dim, CELLG);
+}
+
+void AdvectorPredictorCorrectorHyperbolicPatchOps::preprocessRefine(Patch& /*fine*/,
+                                                                    const Patch& /*coarse*/,
+                                                                    const Box& /*fine_box*/,
+                                                                    const IntVector& /*ratio*/)
+{
+    // intentionally blank
+    return;
+}
+
+void AdvectorPredictorCorrectorHyperbolicPatchOps::postprocessRefine(Patch& /*fine*/,
+                                                                     const Patch& /*coarse*/,
+                                                                     const Box& /*fine_box*/,
+                                                                     const IntVector& /*ratio*/)
+{
+    // intentionally blank
+    return;
+}
+
+IntVector AdvectorPredictorCorrectorHyperbolicPatchOps::getCoarsenOpStencilWidth(const Dimension& dim) const
+{
+    return IntVector::getOne(dim);
+}
+
+void AdvectorPredictorCorrectorHyperbolicPatchOps::preprocessCoarsen(Patch& /*coarse*/,
+                                                                     const Patch& /*fine*/,
+                                                                     const Box& /*coarse_box*/,
+                                                                     const IntVector& /*ratio*/)
+{
+    // intentionally blank
+    return;
+}
+
+void AdvectorPredictorCorrectorHyperbolicPatchOps::postprocessCoarsen(Patch& /*coarse*/,
+                                                                      const Patch& /*fine*/,
+                                                                      const Box& /*coarse_box*/,
+                                                                      const IntVector& /*ratio*/)
+{
+    // intentionally blank
+    return;
+}
+
 void AdvectorPredictorCorrectorHyperbolicPatchOps::putToRestart(const boost::shared_ptr<Database>& db) const
 {
     TBOX_ASSERT(db);
