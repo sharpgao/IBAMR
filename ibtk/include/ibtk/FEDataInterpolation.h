@@ -51,6 +51,8 @@ namespace IBTK
 class FEDataInterpolation
 {
 public:
+
+	
     FEDataInterpolation(unsigned int dim, FEDataManager* const fe_data_manager);
 
     ~FEDataInterpolation();
@@ -223,6 +225,8 @@ public:
                                       const std::vector<int>& vars = std::vector<int>(1, 0),
                                       const std::vector<int>& grad_vars = std::vector<int>(),
                                       libMesh::NumericVector<double>* system_data = NULL);
+                                      
+
 
     /*!
      * \brief Get the variable data for all of the systems.

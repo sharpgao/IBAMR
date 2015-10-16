@@ -115,6 +115,7 @@
 #include "tbox/SAMRAI_MPI.h"
 #include "tbox/Utilities.h"
 
+
 namespace SAMRAI
 {
 namespace xfer
@@ -1340,7 +1341,7 @@ void IBFEMethod::computeInteriorForceDensity(PetscVector<double>& G_vec,
     fe.registerSystem(G_system, vars, vars); // compute phi and dphi for the force system
     const size_t X_sys_idx = fe.registerInterpolatedSystem(X_system, vars, vars, &X_vec);
     const size_t Phi_sys_idx =
-        Phi_vec ? fe.registerInterpolatedSystem(*Phi_system, Phi_vars, no_vars, Phi_vec) : SIZE_T_MAX;
+        Phi_vec ? fe.registerInterpolatedSystem(*Phi_system, Phi_vars, no_vars, Phi_vec) : SIZE_MAX;
     std::vector<size_t> body_force_fcn_system_idxs;
     fe.setupInterpolatedSystemDataIndexes(body_force_fcn_system_idxs, d_lag_body_force_fcn_data[part].system_data,
                                           equation_systems);
@@ -1840,6 +1841,9 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
     // Loop over the patches to impose jump conditions on the Eulerian grid that
     // are determined from the interior and transmission elastic force
     // densities.
+    pout << "\n";
+	pout << "+++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+	pout << "Applying jumps in pressure and viscous term \n";
     const std::vector<std::vector<Elem*> >& active_patch_element_map =
         d_fe_data_managers[part]->getActivePatchElementMap();
     const int level_num = d_fe_data_managers[part]->getLevelNumber();
@@ -1850,7 +1854,10 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
     std::vector<std::vector<unsigned int> > side_dof_indices(NDIM);
     std::vector<libMesh::Point> intersection_ref_coords;
     std::vector<SideIndex<NDIM> > intersection_indices;
+    std::vector<libMesh::Point> intersectionSide_ref_coords;
+    std::vector<SideIndex<NDIM> > intersectionSide_indices;
     std::vector<std::pair<double, libMesh::Point> > intersections;
+    std::vector<std::pair<double, libMesh::Point> > intersectionsSide;
     Pointer<PatchLevel<NDIM> > level = d_hierarchy->getPatchLevel(level_num);
     int local_patch_num = 0;
     for (PatchLevel<NDIM>::Iterator p(level); p; p++, ++local_patch_num)
@@ -1872,6 +1879,9 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 
         SideData<NDIM, int> num_intersections(patch_box, 1, IntVector<NDIM>(0));
         num_intersections.fillAll(0);
+
+        SideData<NDIM, int> num_intersectionsSide(patch_box, 1, IntVector<NDIM>(0));
+        num_intersectionsSide.fillAll(0);
 
         // Loop over the elements.
         for (size_t e_idx = 0; e_idx < num_active_patch_elems; ++e_idx)
@@ -1929,6 +1939,9 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                 // with the background fluid grid.
                 intersection_ref_coords.clear();
                 intersection_indices.clear();
+                intersectionSide_ref_coords.clear();
+                intersectionSide_indices.clear();
+
                 for (unsigned int axis = 0; axis < NDIM; ++axis)
                 {
                     // Setup a unit vector pointing in the coordinate direction
@@ -1944,16 +1957,21 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                     {
                         const Index<NDIM>& i_c = b();
                         libMesh::Point r;
+ 						libMesh::Point rs;
                         for (unsigned int d = 0; d < NDIM; ++d)
                         {
                             r(d) = (d == axis ? 0.0 : x_lower[d] +
                                                           dx[d] * (static_cast<double>(i_c(d) - patch_lower[d]) + 0.5));
+               				rs(d) = (d == axis ? 0.0 : x_lower[d] +
+                                                          dx[d] * (static_cast<double>(i_c(d) - patch_lower[d])));
                         }
 #if (NDIM == 2)
                         intersect_line_with_edge(intersections, static_cast<Edge*>(side_elem.get()), r, q);
+ 						intersect_line_with_edge(intersectionsSide, static_cast<Edge*>(side_elem.get()), rs, q);
 #endif
 #if (NDIM == 3)
                         intersect_line_with_face(intersections, static_cast<Face*>(side_elem.get()), r, q);
+						intersect_line_with_face(intersectionsSide, static_cast<Face*>(side_elem.get()), rs, q);
 #endif
                         for (unsigned int k = 0; k < intersections.size(); ++k)
                         {
@@ -1963,6 +1981,16 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                             intersection_ref_coords.push_back(intersections[k].second);
                             intersection_indices.push_back(i_s);
                             num_intersections(i_s) += 1;
+                        }
+
+                        for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+                        {
+                            libMesh::Point xu = rs + intersectionsSide[k].first * q;
+                            SideIndex<NDIM> i_su(i_c, axis, 0);
+                            i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis] + 0.5) + patch_lower[axis];
+                            intersectionSide_ref_coords.push_back(intersectionsSide[k].second);
+                            intersectionSide_indices.push_back(i_su);
+                            num_intersectionsSide(i_su) += 1;
                         }
                     }
                 }
@@ -1975,10 +2003,15 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 
                 // If there are no intersection points, then continue to the
                 // next side.
-                if (intersection_ref_coords.empty()) continue;
+                 if (intersection_ref_coords.empty() && intersectionSide_ref_coords.empty()) continue;
 
                 // Evaluate the jump conditions and apply them to the Eulerian
                 // grid.
+                // This set of intersection points will take care of the jump in the pressure
+                // as well as the jump in the viscous term for the  following components
+                // 1) u_xx (in the x-momentum equation)  
+                // 2) v_yy (in the y-momentum equation) 
+                // 3) w_zz (in the z-momentum equation) 
                 const bool impose_dp_dn_jumps = !d_use_IB_spread_operator;
                 static const double TOL = sqrt(std::numeric_limits<double>::epsilon());
                 fe.reinit(elem, side, TOL, &intersection_ref_coords);
@@ -2023,6 +2056,10 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                         }
                     }
 #endif
+
+				    //********  This part needs to be folded into a separate *******************************//
+				    //***********function so we don't have to copy the same chunk **************************//
+				    //************of code for the other intersection set ********************************//
                     F.zero();
 
                     for (unsigned int k = 0; k < num_PK1_fcns; ++k)
@@ -2065,6 +2102,8 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                                                                d_lag_surface_force_fcn_data[part].ctx);
                         F += F_s;
                     }
+                    
+                    // /****************************************************************************************/
 
                     F *= dA_da;
 
@@ -2088,12 +2127,102 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                     const double h = x_cell_bdry + (x(axis) > x_cell_bdry ? +0.5 : -0.5) * dx[axis] - x(axis);
                     const double C_p = F * n - h * G(axis);
                     (*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (C_p / dx[axis]);
+
+                    const double hu = x_cell_bdry + (x(axis) > x_cell_bdry ? +1.0 : -1.0) * dx[axis] - x(axis);
+                    const double C_u = hu*(F(axis) - F*n*n(axis))*n(axis);
+
+                    (*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axis]*dx[axis]));
                 }
+                
+                
+                
+                // Apply the jumps of the viscous term on the direction of cell sides
+                // For the velocity field U=(u,v,w) this will take care of corrections
+                // in the following components done in a direction by direction manner:
+                // 1) u_yy, u_zz  (in the x-momentum equation)
+                // 2) v_xx, v_zz  (in the y-momentum equation)
+                // 3) w_xx, w_yy (in the z-momentum equation)
+                
+               
+                fe.reinit(elem, side, TOL, &intersectionSide_ref_coords);
+                fe.interpolate(elem, side);
+                
+                for (unsigned int qp = 0; qp < intersectionSide_ref_coords.size(); ++qp)
+                {
+					const SideIndex<NDIM>& i_su = intersectionSide_indices[qp];
+					const unsigned int axisu = i_su.getAxis();
+
+                    const libMesh::Point& X = intersectionSide_ref_coords[qp];
+                    const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+                    const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+                    get_x_and_FF(x, FF, x_data, grad_x_data);
+                    const double J = std::abs(FF.det());
+                    tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+                    n = (FF_inv_trans * normal_face[qp]).unit();
+                    const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+                    
+                    F.zero();
+
+                    for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+                    {
+                        if (d_PK1_stress_fcn_data[part][k].fcn)
+                        {
+                            // Compute the value of the first Piola-Kirchhoff
+                            // stress tensor at the quadrature point and compute
+                            // the corresponding force.
+                            fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+                                                           PK1_fcn_system_idxs[k], elem, qp);
+                            d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+                                                               PK1_grad_var_data[k], data_time,
+                                                               d_PK1_stress_fcn_data[part][k].ctx);
+                            F -= PP * normal_face[qp];
+                        }
+                    }
+
+                    if (d_lag_surface_pressure_fcn_data[part].fcn)
+                    {
+                        // Compute the value of the pressure at the quadrature
+                        // point and compute the corresponding force.
+                        double P = 0.0;
+                        fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+                                                       surface_pressure_fcn_system_idxs, elem, qp);
+                        d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+                                                                  surface_pressure_grad_var_data, data_time,
+                                                                  d_lag_surface_pressure_fcn_data[part].ctx);
+                        F -= P * J * FF_inv_trans * normal_face[qp];
+                    }
+
+                    if (d_lag_surface_force_fcn_data[part].fcn)
+                    {
+                        // Compute the value of the surface force at the
+                        // quadrature point and compute the corresponding force.
+                        fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+                                                       surface_force_fcn_system_idxs, elem, qp);
+                        d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+                                                               surface_force_grad_var_data, data_time,
+                                                               d_lag_surface_force_fcn_data[part].ctx);
+                        F += F_s;
+                    }
+                    
+                    F *= dA_da;
+                    
+                    const double x_cell_bdry =
+                        x_lower[axisu] + static_cast<double>(i_su(axisu) - patch_lower[axisu]) * dx[axisu];
+					const double hu = x_cell_bdry + (x(axisu) > x_cell_bdry ? +1.0 : -1.0) * dx[axisu] - x(axisu);
+                    const double C_u = hu*(F(axisu) - F*n*n(axisu))*n(axisu);
+
+                    (*f_data)(i_su) += (n(axisu) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axisu]*dx[axisu]));
+					
+					
+				}
+                
             }
         }
     }
     return;
 } // imposeJumpConditions
+
+
 
 void IBFEMethod::initializeCoordinates(const unsigned int part)
 {
