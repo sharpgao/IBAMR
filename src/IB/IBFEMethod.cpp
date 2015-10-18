@@ -1341,7 +1341,7 @@ void IBFEMethod::computeInteriorForceDensity(PetscVector<double>& G_vec,
     fe.registerSystem(G_system, vars, vars); // compute phi and dphi for the force system
     const size_t X_sys_idx = fe.registerInterpolatedSystem(X_system, vars, vars, &X_vec);
     const size_t Phi_sys_idx =
-        Phi_vec ? fe.registerInterpolatedSystem(*Phi_system, Phi_vars, no_vars, Phi_vec) : SIZE_MAX;
+        Phi_vec ? fe.registerInterpolatedSystem(*Phi_system, Phi_vars, no_vars, Phi_vec) : std::numeric_limits<size_t>::max();
     std::vector<size_t> body_force_fcn_system_idxs;
     fe.setupInterpolatedSystemDataIndexes(body_force_fcn_system_idxs, d_lag_body_force_fcn_data[part].system_data,
                                           equation_systems);
@@ -2003,218 +2003,223 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 
                 // If there are no intersection points, then continue to the
                 // next side.
-                 if (intersection_ref_coords.empty() && intersectionSide_ref_coords.empty()) continue;
-
-                // Evaluate the jump conditions and apply them to the Eulerian
-                // grid.
-                // This set of intersection points will take care of the jump in the pressure
-                // as well as the jump in the viscous term for the  following components
-                // 1) u_xx (in the x-momentum equation)  
-                // 2) v_yy (in the y-momentum equation) 
-                // 3) w_zz (in the z-momentum equation) 
-                const bool impose_dp_dn_jumps = !d_use_IB_spread_operator;
                 static const double TOL = sqrt(std::numeric_limits<double>::epsilon());
-                fe.reinit(elem, side, TOL, &intersection_ref_coords);
-                fe.interpolate(elem, side);
-                const size_t n_qp = intersection_ref_coords.size();
-                for (unsigned int qp = 0; qp < n_qp; ++qp)
-                {
-                    const SideIndex<NDIM>& i_s = intersection_indices[qp];
-                    const unsigned int axis = i_s.getAxis();
-                    const libMesh::Point& X = intersection_ref_coords[qp];
-                    const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
-                    const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
-                    get_x_and_FF(x, FF, x_data, grad_x_data);
-                    const double J = std::abs(FF.det());
-                    tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
-                    n = (FF_inv_trans * normal_face[qp]).unit();
-                    const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
-                    const std::vector<double>& G_data = fe_interp_var_data[qp][G_sys_idx];
-                    std::copy(G_data.begin(), G_data.end(), &G(0));
+                 if (!intersection_ref_coords.empty())
+                 {
+					  //~ && intersectionSide_ref_coords.empty()) continue;
+
+					// Evaluate the jump conditions and apply them to the Eulerian
+					// grid.
+						// This set of intersection points will take care of the jump in the pressure
+						// as well as the jump in the viscous term for the  following components
+						// 1) u_xx (in the x-momentum equation)  
+						// 2) v_yy (in the y-momentum equation) 
+						// 3) w_zz (in the z-momentum equation) 
+						const bool impose_dp_dn_jumps = !d_use_IB_spread_operator;
+						fe.reinit(elem, side, TOL, &intersection_ref_coords);
+						fe.interpolate(elem, side);
+						const size_t n_qp = intersection_ref_coords.size();
+						for (unsigned int qp = 0; qp < n_qp; ++qp)
+						{
+							const SideIndex<NDIM>& i_s = intersection_indices[qp];
+							const unsigned int axis = i_s.getAxis();
+							const libMesh::Point& X = intersection_ref_coords[qp];
+							const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+							const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+							get_x_and_FF(x, FF, x_data, grad_x_data);
+							const double J = std::abs(FF.det());
+							tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+							n = (FF_inv_trans * normal_face[qp]).unit();
+							const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+							const std::vector<double>& G_data = fe_interp_var_data[qp][G_sys_idx];
+							std::copy(G_data.begin(), G_data.end(), &G(0));
 #if !defined(NDEBUG)
-                    for (unsigned int d = 0; d < NDIM; ++d)
-                    {
-                        if (d == axis)
-                        {
-                            const double x_lower_bound = x_lower[d] +
-                                                         (static_cast<double>(i_s(d) - patch_lower[d]) - 0.5) * dx[d] -
-                                                         sqrt(std::numeric_limits<double>::epsilon());
-                            const double x_upper_bound = x_lower[d] +
-                                                         (static_cast<double>(i_s(d) - patch_lower[d]) + 0.5) * dx[d] +
-                                                         sqrt(std::numeric_limits<double>::epsilon());
-                            TBOX_ASSERT(x_lower_bound <= x(d) && x(d) <= x_upper_bound);
-                        }
-                        else
-                        {
-                            const double x_intersection =
-                                x_lower[d] + (static_cast<double>(i_s(d) - patch_lower[d]) + 0.5) * dx[d];
-                            const double x_interp = x(d);
-                            const double rel_diff =
-                                std::abs(x_intersection - x_interp) /
-                                std::max(1.0, std::max(std::abs(x_intersection), std::abs(x_interp)));
-                            TBOX_ASSERT(rel_diff <= sqrt(std::numeric_limits<double>::epsilon()));
-                        }
-                    }
+							for (unsigned int d = 0; d < NDIM; ++d)
+							{
+								if (d == axis)
+								{
+									const double x_lower_bound = x_lower[d] +
+																 (static_cast<double>(i_s(d) - patch_lower[d]) - 0.5) * dx[d] -
+																 sqrt(std::numeric_limits<double>::epsilon());
+									const double x_upper_bound = x_lower[d] +
+																 (static_cast<double>(i_s(d) - patch_lower[d]) + 0.5) * dx[d] +
+																 sqrt(std::numeric_limits<double>::epsilon());
+									TBOX_ASSERT(x_lower_bound <= x(d) && x(d) <= x_upper_bound);
+								}
+								else
+								{
+									const double x_intersection =
+										x_lower[d] + (static_cast<double>(i_s(d) - patch_lower[d]) + 0.5) * dx[d];
+									const double x_interp = x(d);
+									const double rel_diff =
+										std::abs(x_intersection - x_interp) /
+										std::max(1.0, std::max(std::abs(x_intersection), std::abs(x_interp)));
+									TBOX_ASSERT(rel_diff <= sqrt(std::numeric_limits<double>::epsilon()));
+								}
+							}
 #endif
 
-				    //********  This part needs to be folded into a separate *******************************//
-				    //***********function so we don't have to copy the same chunk **************************//
-				    //************of code for the other intersection set ********************************//
-                    F.zero();
+							//********  This part needs to be folded into a separate *******************************//
+							//***********function so we don't have to copy the same chunk **************************//
+							//************of code for the other intersection set ********************************//
+							F.zero();
 
-                    for (unsigned int k = 0; k < num_PK1_fcns; ++k)
-                    {
-                        if (d_PK1_stress_fcn_data[part][k].fcn)
-                        {
-                            // Compute the value of the first Piola-Kirchhoff
-                            // stress tensor at the quadrature point and compute
-                            // the corresponding force.
-                            fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
-                                                           PK1_fcn_system_idxs[k], elem, qp);
-                            d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
-                                                               PK1_grad_var_data[k], data_time,
-                                                               d_PK1_stress_fcn_data[part][k].ctx);
-                            F -= PP * normal_face[qp];
-                        }
-                    }
+							for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+							{
+								if (d_PK1_stress_fcn_data[part][k].fcn)
+								{
+									// Compute the value of the first Piola-Kirchhoff
+									// stress tensor at the quadrature point and compute
+									// the corresponding force.
+									fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+																   PK1_fcn_system_idxs[k], elem, qp);
+									d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																	   PK1_grad_var_data[k], data_time,
+																	   d_PK1_stress_fcn_data[part][k].ctx);
+									F -= PP * normal_face[qp];
+								}
+							}
 
-                    if (d_lag_surface_pressure_fcn_data[part].fcn)
-                    {
-                        // Compute the value of the pressure at the quadrature
-                        // point and compute the corresponding force.
-                        double P = 0.0;
-                        fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
-                                                       surface_pressure_fcn_system_idxs, elem, qp);
-                        d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
-                                                                  surface_pressure_grad_var_data, data_time,
-                                                                  d_lag_surface_pressure_fcn_data[part].ctx);
-                        F -= P * J * FF_inv_trans * normal_face[qp];
-                    }
+							if (d_lag_surface_pressure_fcn_data[part].fcn)
+							{
+								// Compute the value of the pressure at the quadrature
+								// point and compute the corresponding force.
+								double P = 0.0;
+								fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+															   surface_pressure_fcn_system_idxs, elem, qp);
+								d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																		  surface_pressure_grad_var_data, data_time,
+																		  d_lag_surface_pressure_fcn_data[part].ctx);
+								F -= P * J * FF_inv_trans * normal_face[qp];
+							}
 
-                    if (d_lag_surface_force_fcn_data[part].fcn)
-                    {
-                        // Compute the value of the surface force at the
-                        // quadrature point and compute the corresponding force.
-                        fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
-                                                       surface_force_fcn_system_idxs, elem, qp);
-                        d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
-                                                               surface_force_grad_var_data, data_time,
-                                                               d_lag_surface_force_fcn_data[part].ctx);
-                        F += F_s;
-                    }
-                    
-                    // /****************************************************************************************/
+							if (d_lag_surface_force_fcn_data[part].fcn)
+							{
+								// Compute the value of the surface force at the
+								// quadrature point and compute the corresponding force.
+								fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+															   surface_force_fcn_system_idxs, elem, qp);
+								d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																	   surface_force_grad_var_data, data_time,
+																	   d_lag_surface_force_fcn_data[part].ctx);
+								F += F_s;
+							}
+							
+							// /****************************************************************************************/
 
-                    F *= dA_da;
+							F *= dA_da;
 
-                    // Determine the value of the interior force density at the
-                    // boundary, and convert it to force per unit volume in the
-                    // current configuration.  This value determines the
-                    // discontinuity in the normal derivative of the pressure at
-                    // the fluid-structure interface.
-                    if (impose_dp_dn_jumps)
-                    {
-                        G /= J;
-                    }
-                    else
-                    {
-                        G.zero();
-                    }
+							// Determine the value of the interior force density at the
+							// boundary, and convert it to force per unit volume in the
+							// current configuration.  This value determines the
+							// discontinuity in the normal derivative of the pressure at
+							// the fluid-structure interface.
+							if (impose_dp_dn_jumps)
+							{
+								G /= J;
+							}
+							else
+							{
+								G.zero();
+							}
 
-                    // Impose the jump conditions.
-                    const double x_cell_bdry =
-                        x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis]) * dx[axis];
-                    const double h = x_cell_bdry + (x(axis) > x_cell_bdry ? +0.5 : -0.5) * dx[axis] - x(axis);
-                    const double C_p = F * n - h * G(axis);
-                    (*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (C_p / dx[axis]);
+							// Impose the jump conditions.
+							const double x_cell_bdry =
+								x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis]) * dx[axis];
+							const double h = x_cell_bdry + (x(axis) > x_cell_bdry ? +0.5 : -0.5) * dx[axis] - x(axis);
+							const double C_p = F * n - h * G(axis);
+							(*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (C_p / dx[axis]);
 
-                    const double hu = x_cell_bdry + (x(axis) > x_cell_bdry ? +1.0 : -1.0) * dx[axis] - x(axis);
-                    const double C_u = hu*(F(axis) - F*n*n(axis))*n(axis);
+							const double hu = x_cell_bdry + (x(axis) > x_cell_bdry ? +1.0 : -1.0) * dx[axis] - x(axis);
+							const double C_u = hu*(F(axis) - F*n*n(axis))*n(axis);
 
-                    (*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axis]*dx[axis]));
-                }
+							(*f_data)(i_s) += (n(axis) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axis]*dx[axis]));
+						}
                 
                 
-                
+			}
                 // Apply the jumps of the viscous term on the direction of cell sides
                 // For the velocity field U=(u,v,w) this will take care of corrections
                 // in the following components done in a direction by direction manner:
                 // 1) u_yy, u_zz  (in the x-momentum equation)
                 // 2) v_xx, v_zz  (in the y-momentum equation)
                 // 3) w_xx, w_yy (in the z-momentum equation)
+               if (!intersectionSide_ref_coords.empty())
                 
-               
-                fe.reinit(elem, side, TOL, &intersectionSide_ref_coords);
-                fe.interpolate(elem, side);
-                
-                for (unsigned int qp = 0; qp < intersectionSide_ref_coords.size(); ++qp)
-                {
-					const SideIndex<NDIM>& i_su = intersectionSide_indices[qp];
-					const unsigned int axisu = i_su.getAxis();
-
-                    const libMesh::Point& X = intersectionSide_ref_coords[qp];
-                    const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
-                    const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
-                    get_x_and_FF(x, FF, x_data, grad_x_data);
-                    const double J = std::abs(FF.det());
-                    tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
-                    n = (FF_inv_trans * normal_face[qp]).unit();
-                    const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
-                    
-                    F.zero();
-
-                    for (unsigned int k = 0; k < num_PK1_fcns; ++k)
-                    {
-                        if (d_PK1_stress_fcn_data[part][k].fcn)
-                        {
-                            // Compute the value of the first Piola-Kirchhoff
-                            // stress tensor at the quadrature point and compute
-                            // the corresponding force.
-                            fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
-                                                           PK1_fcn_system_idxs[k], elem, qp);
-                            d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
-                                                               PK1_grad_var_data[k], data_time,
-                                                               d_PK1_stress_fcn_data[part][k].ctx);
-                            F -= PP * normal_face[qp];
-                        }
-                    }
-
-                    if (d_lag_surface_pressure_fcn_data[part].fcn)
-                    {
-                        // Compute the value of the pressure at the quadrature
-                        // point and compute the corresponding force.
-                        double P = 0.0;
-                        fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
-                                                       surface_pressure_fcn_system_idxs, elem, qp);
-                        d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
-                                                                  surface_pressure_grad_var_data, data_time,
-                                                                  d_lag_surface_pressure_fcn_data[part].ctx);
-                        F -= P * J * FF_inv_trans * normal_face[qp];
-                    }
-
-                    if (d_lag_surface_force_fcn_data[part].fcn)
-                    {
-                        // Compute the value of the surface force at the
-                        // quadrature point and compute the corresponding force.
-                        fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
-                                                       surface_force_fcn_system_idxs, elem, qp);
-                        d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
-                                                               surface_force_grad_var_data, data_time,
-                                                               d_lag_surface_force_fcn_data[part].ctx);
-                        F += F_s;
-                    }
-                    
-                    F *= dA_da;
-                    
-                    const double x_cell_bdry =
-                        x_lower[axisu] + static_cast<double>(i_su(axisu) - patch_lower[axisu]) * dx[axisu];
-					const double hu = x_cell_bdry + (x(axisu) > x_cell_bdry ? +1.0 : -1.0) * dx[axisu] - x(axisu);
-                    const double C_u = hu*(F(axisu) - F*n*n(axisu))*n(axisu);
-
-                    (*f_data)(i_su) += (n(axisu) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axisu]*dx[axisu]));
+               {
+					fe.reinit(elem, side, TOL, &intersectionSide_ref_coords);
+					fe.interpolate(elem, side);
 					
-					
-				}
+					for (unsigned int qp = 0; qp < intersectionSide_ref_coords.size(); ++qp)
+					{
+						const SideIndex<NDIM>& i_su = intersectionSide_indices[qp];
+						const unsigned int axisu = i_su.getAxis();
+
+						const libMesh::Point& X = intersectionSide_ref_coords[qp];
+						const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+						const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+						get_x_and_FF(x, FF, x_data, grad_x_data);
+						const double J = std::abs(FF.det());
+						tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+						n = (FF_inv_trans * normal_face[qp]).unit();
+						const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+						
+						F.zero();
+
+						for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+						{
+							if (d_PK1_stress_fcn_data[part][k].fcn)
+							{
+								// Compute the value of the first Piola-Kirchhoff
+								// stress tensor at the quadrature point and compute
+								// the corresponding force.
+								fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+															   PK1_fcn_system_idxs[k], elem, qp);
+								d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																   PK1_grad_var_data[k], data_time,
+																   d_PK1_stress_fcn_data[part][k].ctx);
+								F -= PP * normal_face[qp];
+							}
+						}
+
+						if (d_lag_surface_pressure_fcn_data[part].fcn)
+						{
+							// Compute the value of the pressure at the quadrature
+							// point and compute the corresponding force.
+							double P = 0.0;
+							fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+														   surface_pressure_fcn_system_idxs, elem, qp);
+							d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																	  surface_pressure_grad_var_data, data_time,
+																	  d_lag_surface_pressure_fcn_data[part].ctx);
+							F -= P * J * FF_inv_trans * normal_face[qp];
+						}
+
+						if (d_lag_surface_force_fcn_data[part].fcn)
+						{
+							// Compute the value of the surface force at the
+							// quadrature point and compute the corresponding force.
+							fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+														   surface_force_fcn_system_idxs, elem, qp);
+							d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																   surface_force_grad_var_data, data_time,
+																   d_lag_surface_force_fcn_data[part].ctx);
+							F += F_s;
+						}
+						
+						F *= dA_da;
+						
+						const double x_cell_bdry =
+							x_lower[axisu] + static_cast<double>(i_su(axisu) - patch_lower[axisu]) * dx[axisu];
+						const double hu = x_cell_bdry + (x(axisu) > x_cell_bdry ? +1.0 : -1.0) * dx[axisu] - x(axisu);
+						const double C_u = hu*(F(axisu) - F*n*n(axisu))*n(axisu);
+
+
+						(*f_data)(i_su) += (n(axisu) > 0.0 ? +1.0 : -1.0) * (- C_u/(dx[axisu]*dx[axisu]));
+						
+						
+					}
+			  }
                 
             }
         }
