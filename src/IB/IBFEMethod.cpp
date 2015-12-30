@@ -1993,15 +1993,23 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
     std::vector<SideIndex<NDIM> > intersection_indices_um;
     std::vector<libMesh::Point> intersection_ref_coords_up;
     std::vector<SideIndex<NDIM> > intersection_indices_up;
-    
+  
+  
     std::vector<libMesh::Point> intersectionSide_ref_coords_up;
     std::vector<SideIndex<NDIM> > intersectionSide_indices_up;
     std::vector<libMesh::Point> intersectionSide_ref_coords_um;
     std::vector<SideIndex<NDIM> > intersectionSide_indices_um;
+
+
+    std::vector<libMesh::Point> intersectionSide2_ref_coords_up;
+    std::vector<SideIndex<NDIM> > intersectionSide2_indices_up;
+    std::vector<libMesh::Point> intersectionSide2_ref_coords_um;
+    std::vector<SideIndex<NDIM> > intersectionSide2_indices_um;
+
+
     std::vector<std::pair<double, libMesh::Point> > intersections;
-    //~ std::vector<std::pair<double, libMesh::Point> > intersections_um;
-    //~ std::vector<std::pair<double, libMesh::Point> > intersections_up;
     std::vector<std::pair<double, libMesh::Point> > intersectionsSide;
+    
     Pointer<PatchLevel<NDIM> > level = d_hierarchy->getPatchLevel(level_num);
     int local_patch_num = 0;
 
@@ -2037,6 +2045,13 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
         
         SideData<NDIM, int> num_intersectionsSide_up(patch_box, 1, IntVector<NDIM>(0));
         num_intersectionsSide_up.fillAll(0);
+        
+
+        SideData<NDIM, int> num_intersectionsSide2_um(patch_box, 1, IntVector<NDIM>(0));
+        num_intersectionsSide2_um.fillAll(0);
+        
+        SideData<NDIM, int> num_intersectionsSide2_up(patch_box, 1, IntVector<NDIM>(0));
+        num_intersectionsSide2_up.fillAll(0);
 
         // Loop over the elements.
         for (size_t e_idx = 0; e_idx < num_active_patch_elems; ++e_idx)
@@ -2106,6 +2121,13 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                 
                 intersectionSide_ref_coords_up.clear();
                 intersectionSide_indices_up.clear();
+                
+
+                intersectionSide2_ref_coords_um.clear();
+                intersectionSide2_indices_um.clear();
+                
+                intersectionSide2_ref_coords_up.clear();
+                intersectionSide2_indices_up.clear();
 
                 for (unsigned int axis = 0; axis < NDIM; ++axis)
                 {
@@ -2173,96 +2195,195 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                         }
                         
 						//// This will cache the point to the right(or top) of the intersection along the side cell
+  
+
+							//~ for (unsigned int dd = 0; dd < NDIM && dd!=axis; ++dd)
+							//~ {
+								
+#if (NDIM == 2)
+
                         for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
                         {
-                            libMesh::Point xu = rs + intersectionsSide[k].first * q;   
+                            libMesh::Point xu = rs + intersectionsSide[k].first * q; 
+							int dd = (axis == 0 ? 1 : 0);
+										
+							Index<NDIM> i_c_neighbor = i_c;		
 
-#if (NDIM == 2)    
-                            // For now let's just experiment with 2D case
-								int dd = (axis == 0 ? 1:0);
-								Index<NDIM> i_c_neighbor = i_c;
-								
-								
-
-								if ( fmod (xu(axis)-x_lower[axis], dx[axis])>= 0.5*dx[axis])
-								{
-									i_c_neighbor(axis) += 1;
-									SideIndex<NDIM> i_su(i_c_neighbor, dd, 0);
-									i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis] + 0.5) + patch_lower[axis];
-									intersectionSide_indices_up.push_back(i_su);
-									num_intersectionsSide_up(i_su) += 1;
-									intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
+							if ( fmod (xu(axis)-x_lower[axis], dx[axis])>= 0.5*dx[axis])
+							{
+											i_c_neighbor(axis) += 1;
+											SideIndex<NDIM> i_su(i_c_neighbor, dd, 0);
+											i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis] + 0.5) + patch_lower[axis];
+											intersectionSide_indices_up.push_back(i_su);
+											num_intersectionsSide_up(i_su) += 1;
+											intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
+							}
+							else 
+							{	
+											SideIndex<NDIM> i_su(i_c_neighbor, dd, 0);
+											i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+											intersectionSide_indices_up.push_back(i_su);
+											num_intersectionsSide_up(i_su) += 1;
+											intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
 									
-									//~ const double x_mid_side = x_lower[axis] + static_cast<double>(i_su(axis) - patch_lower[axis] + 0.5) * dx[axis];
-
-								}
-								else if (fmod (xu(axis)-x_lower[axis], dx[axis])< 0.5*dx[axis])
-								{	
-									SideIndex<NDIM> i_su(i_c_neighbor, dd, 0);
-									i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
-									intersectionSide_indices_up.push_back(i_su);
-									num_intersectionsSide_up(i_su) += 1;
-									intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
-									
-									//~ const double x_mid_side = x_lower[axis] + static_cast<double>(i_su(axis) - patch_lower[axis] + 0.5) * dx[axis];
+							}
+						}
+						
+						
+						for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+                        {
+							libMesh::Point xuu = rs + intersectionsSide[k].first * q; 
+							int dd = (axis == 0 ? 1 : 0);
+							Index<NDIM> i_c_neighbor = i_c;
+							if ( fmod (xuu(axis)-x_lower[axis], dx[axis])>0.5*dx[axis])
+							{
+										
+								SideIndex<NDIM> i_suu(i_c_neighbor, dd, 0);
+								i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+								intersectionSide_indices_um.push_back(i_suu);
+								num_intersectionsSide_um(i_suu) += 1;
+								intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
+										
+							}
+							else
+							{
+								i_c_neighbor(axis) -= 1;	
+								SideIndex<NDIM> i_suu(i_c_neighbor, dd, 0);
+								i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis] - 0.5) + patch_lower[axis];
+								intersectionSide_indices_um.push_back(i_suu);
+								num_intersectionsSide_um(i_suu) += 1;
+								intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
+							}
+						}
 							
-								}
-								else
-								{
-									pout <<"The intersection is not found in the cell!\n\n";
-									exit(0);
-								}						    
-								
 #endif
 
 #if (NDIM == 3)
-
-
-							pout << "Error: The 3D jump condition for velocity has not been setup yet.\n";
-							exit(0);
-#endif 								
-								
-                        }
-                        
-                        //// This will cache the point to the left(bottom) of the intersection along the side cell
-                        for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+						int SideDim[2];
+						if (axis == 0){
+							SideDim[0] = 1; 
+							SideDim[1] = 2;
+						}
+						else if (axis == 1){
+							SideDim[0] = 2; 
+							SideDim[1] = 0;
+						}
+						else{
+							SideDim[0] = 0; 
+							SideDim[1] = 1;
+						}
+							
+						for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
                         {
-                            libMesh::Point xuu = rs + intersectionsSide[k].first * q;
-#if (NDIM == 2)                        
-								int dd = (axis == 0 ? 1:0);
-								Index<NDIM> i_c_neighbor = i_c;
+							libMesh::Point xu = rs + intersectionsSide[k].first * q; 
+							
+							
+							Index<NDIM> i_c_neighbor = i_c;		
 
+							if ( fmod (xu(axis)-x_lower[axis], dx[axis])>= 0.5*dx[axis])
+							{
+								i_c_neighbor(axis) += 1;
+								SideIndex<NDIM> i_su(i_c_neighbor, SideDim[0], 0);
+								i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis] + 0.5) + patch_lower[axis];
+								intersectionSide_indices_up.push_back(i_su);
+								num_intersectionsSide_up(i_su) += 1;
+								intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
+							}
+							else 
+							{	
+								SideIndex<NDIM> i_su(i_c_neighbor, SideDim[0], 0);
+								i_su(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+								intersectionSide_indices_up.push_back(i_su);
+								num_intersectionsSide_up(i_su) += 1;
+								intersectionSide_ref_coords_up.push_back(intersectionsSide[k].second);
+									
+							}
+						}
+						
+						
+						for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+                        {
+							libMesh::Point xu = rs + intersectionsSide[k].first * q; 
+							
+							
+							Index<NDIM> i_c_neighbor2 = i_c;
+							
+							if ( fmod (xu(axis)-x_lower[axis], dx[axis])>= 0.5*dx[axis])
+							{
+								i_c_neighbor2(axis) += 1;
+								SideIndex<NDIM> i_su2(i_c_neighbor2, SideDim[1], 0);
+								i_su2(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis] + 0.5) + patch_lower[axis];
+								intersectionSide2_indices_up.push_back(i_su2);
+								num_intersectionsSide2_up(i_su2) += 1;
+								intersectionSide2_ref_coords_up.push_back(intersectionsSide[k].second);
+							}
+							else 
+							{	
+								SideIndex<NDIM> i_su2(i_c_neighbor2, SideDim[1], 0);
+								i_su2(axis) = std::floor((xu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+								intersectionSide2_indices_up.push_back(i_su2);
+								num_intersectionsSide2_up(i_su2) += 1;
+								intersectionSide2_ref_coords_up.push_back(intersectionsSide[k].second);
+									
+							}
+							
+					    
+						}
+
+
+						for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+						{
+							libMesh::Point xuu = rs + intersectionsSide[k].first * q;
+							Index<NDIM> i_c_neighbor = i_c;
+							if ( fmod (xuu(axis)-x_lower[axis], dx[axis])>0.5*dx[axis])
+							{
+										
+								SideIndex<NDIM> i_suu(i_c_neighbor, SideDim[0], 0);
+								i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+								intersectionSide_indices_um.push_back(i_suu);
+								num_intersectionsSide_um(i_suu) += 1;
+								intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
+										
+							}
+							else
+							{
+								i_c_neighbor(axis) -= 1;	
+								SideIndex<NDIM> i_suu(i_c_neighbor, SideDim[0], 0);
+								i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis] - 0.5) + patch_lower[axis];
+								intersectionSide_indices_um.push_back(i_suu);
+								num_intersectionsSide_um(i_suu) += 1;
+								intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
+							}
+							
+						}
+						
+						for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
+						{
+								libMesh::Point xuu = rs + intersectionsSide[k].first * q;
+								Index<NDIM> i_c_neighbor2 = i_c;
 								if ( fmod (xuu(axis)-x_lower[axis], dx[axis])>0.5*dx[axis])
 								{
-									
-									SideIndex<NDIM> i_suu(i_c_neighbor, dd, 0);
-									i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
-									intersectionSide_indices_um.push_back(i_suu);
-									num_intersectionsSide_um(i_suu) += 1;
-									intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
-									
+											
+									SideIndex<NDIM> i_suu2(i_c_neighbor2, SideDim[1], 0);
+									i_suu2(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis]) + patch_lower[axis];
+									intersectionSide2_indices_um.push_back(i_suu2);
+									num_intersectionsSide2_um(i_suu2) += 1;
+									intersectionSide2_ref_coords_um.push_back(intersectionsSide[k].second);
+											
 								}
 								else
 								{
-									i_c_neighbor(axis) -= 1;	
-									SideIndex<NDIM> i_suu(i_c_neighbor, dd, 0);
-									i_suu(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis] - 0.5) + patch_lower[axis];
-									intersectionSide_indices_um.push_back(i_suu);
-									num_intersectionsSide_um(i_suu) += 1;
-									intersectionSide_ref_coords_um.push_back(intersectionsSide[k].second);
+									i_c_neighbor2(axis) -= 1;	
+									SideIndex<NDIM> i_suu2(i_c_neighbor2, SideDim[1], 0);
+									i_suu2(axis) = std::floor((xuu(axis) - x_lower[axis])/ dx[axis] - 0.5) + patch_lower[axis];
+									intersectionSide2_indices_um.push_back(i_suu2);
+									num_intersectionsSide2_um(i_suu2) += 1;
+									intersectionSide2_ref_coords_um.push_back(intersectionsSide[k].second);
 								}
-#endif 
-							
-#if (NDIM == 3)
+						}
+#endif
 
-
-							pout << "Error: The three dimensional jump condition for velocity has not been setup yet.\n";
-							exit(0);
-#endif 	                 
-
-                        }
-                        
-                        
+                                                
                     }
                 }
 
@@ -2538,10 +2659,7 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
                 
                 
 			}	
-			
 					
-		
-		
                 // If there are no intersection points, then continue to the
                 // next side.
  
@@ -2662,8 +2780,9 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 						}
 					}
 			
-			
-			
+
+
+#if(NDIM == 2)			
                 // Apply the jumps of the viscous term on the direction of cell sides
                 // For the velocity field U=(u,v,w) this will take care of corrections
                 // in the following components done in a direction by direction manner:
@@ -2738,41 +2857,221 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 						}
 						
 						F *= dA_da;
-						
 
+						    
+						const unsigned int dd = i_s.getAxis();
 						
-					
+						const SideIndex<NDIM>& i_s_side_um = intersectionSide_indices_um[qp];	
 						    
-						    const unsigned int dd = i_s.getAxis();
-						    int axis = (dd == 0 ? 1:0);
-						    
-						    
-						    // Impose the jump conditions.
-							const double x_mid_side =
-								x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
-								
-							TBOX_ASSERT(x(axis)<= x_mid_side);
-							
-							
-								
-							 const double SDH = ((x(axis) - x_mid_side)) ;   //Signed Distance h
-							   
-							 const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);
-		
-  
-							 const SideIndex<NDIM>& i_s_side_um = intersectionSide_indices_um[qp];
-								
-							 
-						
-							(*f_data)(i_s_side_um) +=  (n(axis) > 0.0 ? -1.0 : 1.0)*(C_u/(dx[axis]*dx[axis])); 
+						int axis = (dd == 0 ? 1:0);
+						    			
+										// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+											
+						TBOX_ASSERT(x(axis)<= x_mid_side);
+	
+						const double SDH = ((x(axis) - x_mid_side)) ;   //Signed Distance h
+										   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);		
+						(*f_data)(i_s_side_um) +=  (n(axis) > 0.0 ? -1.0 : 1.0)*(C_u/(dx[axis]*dx[axis])); 
 								
 	  
 					}
 			  }
 			  
+
+			    if (!intersectionSide_ref_coords_um.empty())
+                
+               {
+					fe.reinit(elem, side, TOL, &intersectionSide_ref_coords_um);
+					fe.interpolate(elem, side);
+					
+					for (unsigned int qp = 0; qp < intersectionSide_ref_coords_um.size(); ++qp)
+					{
+						const SideIndex<NDIM>& i_s = intersectionSide_indices_um[qp];
+						const libMesh::Point& X = intersectionSide_ref_coords_um[qp];
+						const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+						const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+						get_x_and_FF(x, FF, x_data, grad_x_data);
+						const double J = std::abs(FF.det());
+						tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+						n = (FF_inv_trans * normal_face[qp]).unit();
+						const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+						
+						F.zero();
+
+						for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+						{
+							if (d_PK1_stress_fcn_data[part][k].fcn)
+							{
+								// Compute the value of the first Piola-Kirchhoff
+								// stress tensor at the quadrature point and compute
+								// the corresponding force.
+								fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+															   PK1_fcn_system_idxs[k], elem, qp);
+								d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																   PK1_grad_var_data[k], data_time,
+																   d_PK1_stress_fcn_data[part][k].ctx);
+								F -= PP * normal_face[qp];
+							}
+						}
+
+						if (d_lag_surface_pressure_fcn_data[part].fcn)
+						{
+							// Compute the value of the pressure at the quadrature
+							// point and compute the corresponding force.
+							double P = 0.0;
+							fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+														   surface_pressure_fcn_system_idxs, elem, qp);
+							d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																	  surface_pressure_grad_var_data, data_time,
+																	  d_lag_surface_pressure_fcn_data[part].ctx);
+							F -= P * J * FF_inv_trans * normal_face[qp];
+						}
+
+						if (d_lag_surface_force_fcn_data[part].fcn)
+						{
+							// Compute the value of the surface force at the
+							// quadrature point and compute the corresponding force.
+							fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+														   surface_force_fcn_system_idxs, elem, qp);
+							d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																   surface_force_grad_var_data, data_time,
+																   d_lag_surface_force_fcn_data[part].ctx);
+							F += F_s;
+							
+						}
+					
+						
+						F *= dA_da;
+
+						const unsigned int dd = i_s.getAxis();
+						    
+						const SideIndex<NDIM>& i_s_side_up = intersectionSide_indices_up[qp];
+						
+						int axis = (dd == 0 ? 1:0);
+								// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+									
+						TBOX_ASSERT(x(axis)> x_mid_side);	
+
+						const double SDH = ((x(axis) - x_mid_side)) ; 
+								   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);
+								
+						(*f_data)(i_s_side_up) +=  (n(axis) > 0.0 ? 1.0 : -1.0)*(C_u/(dx[axis]*dx[axis]));
+						    
+												  
+					}
+			  }
+#endif       
+    
+#if(NDIM == 3)
+
+		
+
+               if (!intersectionSide_ref_coords_up.empty())
+                
+               {
+					fe.reinit(elem, side, TOL, &intersectionSide_ref_coords_up);
+					fe.interpolate(elem, side);
+					
+					for (unsigned int qp = 0; qp < intersectionSide_ref_coords_up.size(); ++qp)
+					{
+						const SideIndex<NDIM>& i_s = intersectionSide_indices_up[qp];
+						
+
+						const libMesh::Point& X = intersectionSide_ref_coords_up[qp];
+						const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+						const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+						get_x_and_FF(x, FF, x_data, grad_x_data);
+						const double J = std::abs(FF.det());
+						tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+						n = (FF_inv_trans * normal_face[qp]).unit();
+						const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+						
+						F.zero();
+
+						for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+						{
+							if (d_PK1_stress_fcn_data[part][k].fcn)
+							{
+								// Compute the value of the first Piola-Kirchhoff
+								// stress tensor at the quadrature point and compute
+								// the corresponding force.
+								fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+															   PK1_fcn_system_idxs[k], elem, qp);
+								d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																   PK1_grad_var_data[k], data_time,
+																   d_PK1_stress_fcn_data[part][k].ctx);
+								F -= PP * normal_face[qp];
+							}
+						}
+
+						if (d_lag_surface_pressure_fcn_data[part].fcn)
+						{
+							// Compute the value of the pressure at the quadrature
+							// point and compute the corresponding force.
+							double P = 0.0;
+							fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+														   surface_pressure_fcn_system_idxs, elem, qp);
+							d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																	  surface_pressure_grad_var_data, data_time,
+																	  d_lag_surface_pressure_fcn_data[part].ctx);
+							F -= P * J * FF_inv_trans * normal_face[qp];
+						}
+
+
+						if (d_lag_surface_force_fcn_data[part].fcn)
+						{
+							// Compute the value of the surface force at the
+							// quadrature point and compute the corresponding force.
+							fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+														   surface_force_fcn_system_idxs, elem, qp);
+							d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																   surface_force_grad_var_data, data_time,
+																   d_lag_surface_force_fcn_data[part].ctx);
+							F += F_s;
+							
+							
+						}
+						
+						F *= dA_da;
+
+						    
+						const unsigned int dd = i_s.getAxis();
+						
+						int axis;
+
+							if (dd == 0){
+									axis = 2;
+							}
+							else if (dd == 1){
+									axis = 0;
+							}
+							else{
+									axis = 1;
+							}
+						
+						const SideIndex<NDIM>& i_s_side_um = intersectionSide_indices_um[qp];	
+						    
+				
+						// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+											
+						TBOX_ASSERT(x(axis)<= x_mid_side);
+	
+						const double SDH = ((x(axis) - x_mid_side)) ;   //Signed Distance h
+										   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);		
+						(*f_data)(i_s_side_um) +=  (n(axis) > 0.0 ? -1.0 : 1.0)*(C_u/(dx[axis]*dx[axis]));
+						
+								
+	  
+					}
+			  }
 			  
-			  
-			  
+
 			    if (!intersectionSide_ref_coords_um.empty())
                 
                {
@@ -2823,9 +3122,7 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 																	  d_lag_surface_pressure_fcn_data[part].ctx);
 							F -= P * J * FF_inv_trans * normal_face[qp];
 						}
-						
-						
-						
+
 						if (d_lag_surface_force_fcn_data[part].fcn)
 						{
 							// Compute the value of the surface force at the
@@ -2841,40 +3138,255 @@ void IBFEMethod::imposeJumpConditions(const int f_data_idx,
 					
 						
 						F *= dA_da;
+
+						const unsigned int dd = i_s.getAxis();
+						
+						int axis;
+						
+						if (dd == 0){
+									axis = 2;
+						}
+						else if (dd == 1){
+									axis = 0;
+								
+						}
+						else{
+									axis = 1;
+								
+						}
+					
+						    
+						const SideIndex<NDIM>& i_s_side_up = intersectionSide_indices_up[qp];
+						
+								// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+									
+						TBOX_ASSERT(x(axis)> x_mid_side);	
+
+						const double SDH = ((x(axis) - x_mid_side)) ; 
+								   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);
+								
+						(*f_data)(i_s_side_up) +=  (n(axis) > 0.0 ? 1.0 : -1.0)*(C_u/(dx[axis]*dx[axis]));
+						    
+
+												  
+					}
+			  }
+          
+
+
+               if (!intersectionSide2_ref_coords_up.empty())
+                
+               {
+					fe.reinit(elem, side, TOL, &intersectionSide2_ref_coords_up);
+					fe.interpolate(elem, side);
+					
+					for (unsigned int qp = 0; qp < intersectionSide2_ref_coords_up.size(); ++qp)
+					{
+						const SideIndex<NDIM>& i_s = intersectionSide2_indices_up[qp];
 						
 
+						const libMesh::Point& X = intersectionSide2_ref_coords_up[qp];
+						const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+						const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+						get_x_and_FF(x, FF, x_data, grad_x_data);
+						const double J = std::abs(FF.det());
+						tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+						n = (FF_inv_trans * normal_face[qp]).unit();
+						const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+						
+						F.zero();
+
+						for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+						{
+							if (d_PK1_stress_fcn_data[part][k].fcn)
+							{
+								// Compute the value of the first Piola-Kirchhoff
+								// stress tensor at the quadrature point and compute
+								// the corresponding force.
+								fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+															   PK1_fcn_system_idxs[k], elem, qp);
+								d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																   PK1_grad_var_data[k], data_time,
+																   d_PK1_stress_fcn_data[part][k].ctx);
+								F -= PP * normal_face[qp];
+							}
+						}
+
+						if (d_lag_surface_pressure_fcn_data[part].fcn)
+						{
+							// Compute the value of the pressure at the quadrature
+							// point and compute the corresponding force.
+							double P = 0.0;
+							fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+														   surface_pressure_fcn_system_idxs, elem, qp);
+							d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																	  surface_pressure_grad_var_data, data_time,
+																	  d_lag_surface_pressure_fcn_data[part].ctx);
+							F -= P * J * FF_inv_trans * normal_face[qp];
+						}
+
+
+						if (d_lag_surface_force_fcn_data[part].fcn)
+						{
+							// Compute the value of the surface force at the
+							// quadrature point and compute the corresponding force.
+							fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+														   surface_force_fcn_system_idxs, elem, qp);
+							d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																   surface_force_grad_var_data, data_time,
+																   d_lag_surface_force_fcn_data[part].ctx);
+							F += F_s;
+							
+							
+						}
+						
+						F *= dA_da;
+
+						    
+						const unsigned int dd = i_s.getAxis();
+						
+						int axis;
+							if (dd == 0){
+									axis = 1;
+									
+							}
+							else if (dd == 1){
+									axis = 2;
+							}
+							else{
+									axis = 0;
+
+							}
 						
 	
-							const unsigned int dd = i_s.getAxis();
-						    int axis = (dd == 0 ? 1:0);
+						
+						const SideIndex<NDIM>& i_s_side_um = intersectionSide2_indices_um[qp];	
 						    
-						    
-						    
-						    // Impose the jump conditions.
-							const double x_mid_side =
-								x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+			
+										// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+											
+						TBOX_ASSERT(x(axis)<= x_mid_side);
+	
+						const double SDH = ((x(axis) - x_mid_side)) ;   //Signed Distance h
+										   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);		
+						(*f_data)(i_s_side_um) +=  (n(axis) > 0.0 ? -1.0 : 1.0)*(C_u/(dx[axis]*dx[axis]));
 								
-							TBOX_ASSERT(x(axis)> x_mid_side);	
+	  
+					}
+			  }
+			 
 
+
+
+				if (!intersectionSide2_ref_coords_um.empty())
+                
+               {
+					fe.reinit(elem, side, TOL, &intersectionSide2_ref_coords_um);
+					fe.interpolate(elem, side);
+					
+					for (unsigned int qp = 0; qp < intersectionSide2_ref_coords_um.size(); ++qp)
+					{
+						const SideIndex<NDIM>& i_s = intersectionSide2_indices_um[qp];
+
+						const libMesh::Point& X = intersectionSide2_ref_coords_um[qp];
+						const std::vector<double>& x_data = fe_interp_var_data[qp][X_sys_idx];
+						const std::vector<VectorValue<double> >& grad_x_data = fe_interp_grad_var_data[qp][X_sys_idx];
+						get_x_and_FF(x, FF, x_data, grad_x_data);
+						const double J = std::abs(FF.det());
+						tensor_inverse_transpose(FF_inv_trans, FF, NDIM);
+						n = (FF_inv_trans * normal_face[qp]).unit();
+						const double dA_da = 1.0 / (J * (FF_inv_trans * normal_face[qp]) * n);
+						
+						F.zero();
+
+						for (unsigned int k = 0; k < num_PK1_fcns; ++k)
+						{
+							if (d_PK1_stress_fcn_data[part][k].fcn)
+							{
+								// Compute the value of the first Piola-Kirchhoff
+								// stress tensor at the quadrature point and compute
+								// the corresponding force.
+								fe.setInterpolatedDataPointers(PK1_var_data[k], PK1_grad_var_data[k],
+															   PK1_fcn_system_idxs[k], elem, qp);
+								d_PK1_stress_fcn_data[part][k].fcn(PP, FF, x, X, elem, PK1_var_data[k],
+																   PK1_grad_var_data[k], data_time,
+																   d_PK1_stress_fcn_data[part][k].ctx);
+								F -= PP * normal_face[qp];
+							}
+						}
+
+						if (d_lag_surface_pressure_fcn_data[part].fcn)
+						{
+							// Compute the value of the pressure at the quadrature
+							// point and compute the corresponding force.
+							double P = 0.0;
+							fe.setInterpolatedDataPointers(surface_pressure_var_data, surface_pressure_grad_var_data,
+														   surface_pressure_fcn_system_idxs, elem, qp);
+							d_lag_surface_pressure_fcn_data[part].fcn(P, FF, x, X, elem, side, surface_pressure_var_data,
+																	  surface_pressure_grad_var_data, data_time,
+																	  d_lag_surface_pressure_fcn_data[part].ctx);
+							F -= P * J * FF_inv_trans * normal_face[qp];
+						}
+
+						if (d_lag_surface_force_fcn_data[part].fcn)
+						{
+							// Compute the value of the surface force at the
+							// quadrature point and compute the corresponding force.
+							fe.setInterpolatedDataPointers(surface_force_var_data, surface_force_grad_var_data,
+														   surface_force_fcn_system_idxs, elem, qp);
+							d_lag_surface_force_fcn_data[part].fcn(F_s, FF, x, X, elem, side, surface_force_var_data,
+																   surface_force_grad_var_data, data_time,
+																   d_lag_surface_force_fcn_data[part].ctx);
+							F += F_s;
 							
-							const SideIndex<NDIM>& i_s_side_up = intersectionSide_indices_up[qp];
+						}
+					
+						
+						F *= dA_da;
 
+						const unsigned int dd = i_s.getAxis();
+						
+						int axis;
+							if (dd == 0){
+									axis = 1;
+							}
+							else if (dd == 1){
+									axis = 2;
+							}
+							else{
+									axis = 0;
+							}
 				
-							   
-						    const double SDH = ((x(axis) - x_mid_side)) ; 
-							   
-							const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);
-							
-							 (*f_data)(i_s_side_up) +=  (n(axis) > 0.0 ? 1.0 : -1.0)*(C_u/(dx[axis]*dx[axis]));
 						    
-							
+						const SideIndex<NDIM>& i_s_side_up = intersectionSide2_indices_up[qp];
+						
+								// Impose the jump conditions.
+						const double x_mid_side = x_lower[axis] + static_cast<double>(i_s(axis) - patch_lower[axis] + 0.5) * dx[axis];
+									
+						TBOX_ASSERT(x(axis)> x_mid_side);	
 
-							
+						const double SDH = ((x(axis) - x_mid_side)) ; 
+								   
+						const double C_u = SDH*(F(dd)-F*n*n(dd))*n(axis);
+								
+						(*f_data)(i_s_side_up) +=  (n(axis) > 0.0 ? 1.0 : -1.0)*(C_u/(dx[axis]*dx[axis]));
+
 							//intersectionSide_ref_coords_um
 
 												  
 					}
 			  }
+   
+
+
+#endif
+           
+           
+           
             }
         }
     }
