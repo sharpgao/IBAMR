@@ -291,7 +291,7 @@ main(int argc, char* argv[])
         solid_mesh.boundary_info->sync(boundary_mesh);
         boundary_mesh.prepare_for_use();
 
-        bool use_boundary_mesh = input_db->getBoolWithDefault("USE_BOUNDARY_MESH", false);
+        bool use_boundary_mesh = input_db->getBoolWithDefault("CODIMENSION_ONE", false);
         Mesh& mesh = use_boundary_mesh ? boundary_mesh : solid_mesh;
 
         c1_s = input_db->getDouble("C1_S");
