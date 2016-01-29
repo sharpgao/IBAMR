@@ -1,26 +1,28 @@
 // physical parameters
-Re = 200.0
+Re = 250.0
 MU = 1.0/Re
 RHO = 1.0
 
 // grid spacing parameters
 L = 16.0                                       // width of computational domain
-MAX_LEVELS = 6                                 // maximum number of levels in locally refined grid
+MAX_LEVELS = 5                                 // maximum number of levels in locally refined grid
 REF_RATIO  = 2                                 // refinement ratio between levels
-N = 16                                         // actual    number of grid cells on coarsest grid level
+N = 18                                         // actual    number of grid cells on coarsest grid level
 NFINEST = (REF_RATIO^(MAX_LEVELS - 1))*N       // effective number of grid cells on finest   grid level
 DX0 = L/N                                      // mesh width on coarsest grid level
 DX  = L/NFINEST                                // mesh width on finest   grid level
-MFAC = 8.0                                     // ratio of Lagrangian mesh width to Cartesian mesh width
+MFAC = 1.5                                     // ratio of Lagrangian mesh width to Cartesian mesh width
 ELEM_TYPE = "TRI6"                             // type of element to use for structure discretization
 PK1_DEV_QUAD_ORDER = "SEVENTH"
 PK1_DIL_QUAD_ORDER = "FIFTH"
 USE_BOUNDARY_MESH = TRUE
 
 // solver parameters
-IB_DELTA_FUNCTION          = "IB_4"            // the type of smoothed delta function to use for Lagrangian-Eulerian interaction
-SPLIT_FORCES               = FALSE             // whether to split interior and boundary forces
+IB_DELTA_FUNCTION          = "PIECEWISE_LINEAR"            // the type of smoothed delta function to use for Lagrangian-Eulerian interaction
+SPLIT_FORCES               = TRUE             // whether to split interior and boundary forces
 USE_JUMP_CONDITIONS        = FALSE             // whether to impose pressure jumps at fluid-structure interfaces
+CODIMENSION_ZERO		   = TRUE			  // true if codimenion zero, false if codimension one
+
 USE_CONSISTENT_MASS_MATRIX = TRUE              // whether to use a consistent or lumped mass matrix
 IB_POINT_DENSITY           = 4.0               // approximate density of IB quadrature points for Lagrangian-Eulerian interaction
 SOLVER_TYPE                = "STAGGERED"       // the fluid solver to use (STAGGERED or COLLOCATED)
@@ -32,7 +34,7 @@ CONVECTIVE_OP_TYPE         = "PPM"             // convective differencing discre
 CONVECTIVE_FORM            = "ADVECTIVE"       // how to compute the convective terms
 NORMALIZE_PRESSURE         = FALSE             // whether to explicitly force the pressure to have mean zero
 CFL_MAX                    = 0.2               // maximum CFL number
-DT                         = 0.25*CFL_MAX*DX    // maximum timestep size
+DT                         = 0.1*CFL_MAX*DX    // maximum timestep size
 ERROR_ON_DT_CHANGE         = TRUE              // whether to emit an error message if the time step size changes
 VORTICITY_TAGGING          = TRUE              // whether to tag cells for refinement based on vorticity thresholds
 TAG_BUFFER                 = 1                 // size of tag buffer used by grid generation algorithm
@@ -45,8 +47,12 @@ OUTPUT_DIV_U               = TRUE
 ENABLE_LOGGING             = TRUE
 
 // model parameters
-KAPPA_S = 2.5*DX/DT^2
-ETA_S = 1.5*DX/DT
+KAPPA_S_BODY = 1.0*DX/DT^2
+ETA_S_BODY = 0.0
+KAPPA_S_SURFACE = 0.0
+ETA_S_SURFACE = 0.0
+ETA_S = 0.0
+C1_S = 1.0e3
 
 // collocated solver parameters
 PROJECTION_METHOD_TYPE = "PRESSURE_UPDATE"
@@ -103,6 +109,7 @@ IBFEMethod {
    IB_delta_fcn                = IB_DELTA_FUNCTION
    split_forces                = SPLIT_FORCES
    use_jump_conditions         = USE_JUMP_CONDITIONS
+   codimension_zero			   = CODIMENSION_ZERO
    use_consistent_mass_matrix  = USE_CONSISTENT_MASS_MATRIX
    IB_point_density            = IB_POINT_DENSITY
 }
@@ -164,8 +171,8 @@ Main {
 
 // visualization dump parameters
    viz_writer                  = "VisIt","ExodusII"
-   viz_dump_interval           = int(0.5/DT)
-   viz_dump_dirname            = "viz_IB2d"
+   viz_dump_interval           = 100
+   viz_dump_dirname            = "viz_IB2d_split_real"
    visit_number_procs_per_file = 1
 
 // restart dump parameters
@@ -174,7 +181,7 @@ Main {
 
 // hierarchy data dump parameters
    data_dump_interval          = 1
-   data_dump_dirname           = "hier_data_IB2d"
+   data_dump_dirname           = "hier_data_IB2d_spread"
 
 // timer dump parameters
    timer_dump_interval         = 0

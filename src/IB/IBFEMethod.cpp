@@ -734,22 +734,41 @@ IBFEMethod::spreadForce(const int f_data_idx,
         // The current implementation of jump takes into account for
         // both normal and tangential components of the transmission force
         // If jump condition is not used but the forces are split then the transmission force is spread on the immersed boundary.
- 
-        d_fe_data_managers[part]->spread(
-            f_data_idx, *F_ghost_vec, *X_ghost_vec, FORCE_SYSTEM_NAME, f_phys_bdry_op, data_time);
+		if (d_codimension_zero)
+		{
+			pout<<"this is the codiemnsion zero!!"<<"\n";
+			
+			d_fe_data_managers[part]->spread(
+				f_data_idx, *F_ghost_vec, *X_ghost_vec, FORCE_SYSTEM_NAME, f_phys_bdry_op, data_time);
 
-        if (d_split_normal_force || d_split_tangential_force)
-        {
-            if (d_use_jump_conditions)
-            {
-                imposeJumpConditions(f_data_idx, *F_ghost_vec, *X_ghost_vec, data_time, part);
-            }
-            else
-            {
-				
-                spreadTransmissionForceDensity(f_data_idx, *X_ghost_vec, f_phys_bdry_op, data_time, part);
-            }
-        }
+			if (d_split_normal_force || d_split_tangential_force)
+			{
+				if (d_use_jump_conditions)
+				{
+					imposeJumpConditions(f_data_idx, *F_ghost_vec, *X_ghost_vec, data_time, part);
+				}
+				else
+				{
+					
+					spreadTransmissionForceDensity(f_data_idx, *X_ghost_vec, f_phys_bdry_op, data_time, part);
+				}
+			}	
+		}
+		else{
+			pout<<"this is the codiemnsion one!!"<<"\n";
+			
+			if (d_use_jump_conditions)
+			{
+				imposeJumpConditions(f_data_idx, *F_ghost_vec, *X_ghost_vec, data_time, part);
+			}
+			else
+			{
+					
+				d_fe_data_managers[part]->spread(f_data_idx, *F_ghost_vec, *X_ghost_vec, FORCE_SYSTEM_NAME, f_phys_bdry_op, data_time);
+			}
+			
+		}
+        
     }
     return;
 } // spreadForce
@@ -2058,7 +2077,7 @@ IBFEMethod::imposeJumpConditions(const int f_data_idx,
     const MeshBase& mesh = equation_systems->get_mesh();
     const BoundaryInfo& boundary_info = *mesh.boundary_info;
     const unsigned int dim = mesh.mesh_dimension();
-    TBOX_ASSERT(dim == NDIM);
+    if (d_codimension_zero) TBOX_ASSERT(dim == NDIM);
 
     // Extract the FE systems and DOF maps, and setup the FE object.
     System& G_system = equation_systems->get_system(FORCE_SYSTEM_NAME);
@@ -3694,6 +3713,7 @@ IBFEMethod::commonConstructor(const std::string& object_name,
     const int point_density = 2.0;
     const bool interp_use_consistent_mass_matrix = true;
     const bool use_one_sided_interaction = false;
+
     d_default_interp_spec = FEDataManager::InterpSpec("IB_4",
                                                       QGAUSS,
                                                       INVALID_ORDER,
@@ -3707,6 +3727,7 @@ IBFEMethod::commonConstructor(const std::string& object_name,
     d_split_normal_force = false;
     d_split_tangential_force = false;
     d_use_jump_conditions = false;
+    d_codimension_zero = false;
     d_fe_family = LAGRANGE;
     d_fe_order = INVALID_ORDER;
     d_quad_type = QGAUSS;
@@ -3870,6 +3891,8 @@ IBFEMethod::getFromInput(Pointer<Database> db, bool /*is_from_restart*/)
         d_default_spread_spec.point_density = db->getDouble("IB_point_density");
 
     // Force computation settings.
+    if (db->isBool("codimension_zero"))
+        d_codimension_zero = db->getBool("codimension_zero");
     if (db->isBool("split_normal_force"))
         d_split_normal_force = db->getBool("split_normal_force");
     else if (db->isBool("split_forces"))
@@ -3935,6 +3958,7 @@ IBFEMethod::getFromRestart()
     db->getIntegerArray("d_ghosts", d_ghosts, NDIM);
     d_split_normal_force = db->getBool("d_split_normal_force");
     d_split_tangential_force = db->getBool("d_split_tangential_force");
+    d_codimension_zero = db->getBool("d_codimension_zero");
     d_use_jump_conditions = db->getBool("d_use_jump_conditions");
     d_fe_family = Utility::string_to_enum<FEFamily>(db->getString("d_fe_family"));
     d_fe_order = Utility::string_to_enum<Order>(db->getString("d_fe_order"));

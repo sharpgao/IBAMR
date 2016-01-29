@@ -376,6 +376,9 @@ main(int argc, char* argv[])
                 ib_method_ops->registerStressNormalizationPart();
             }
         }
+        
+        ib_method_ops->initializeFEEquationSystems();
+        
         EquationSystems* equation_systems = ib_method_ops->getFEDataManager()->getEquationSystems();
 
         // Create Eulerian initial condition specification objects.
