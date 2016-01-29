@@ -15,13 +15,12 @@ MFAC = 1.5                                     // ratio of Lagrangian mesh width
 ELEM_TYPE = "TRI6"                             // type of element to use for structure discretization
 PK1_DEV_QUAD_ORDER = "SEVENTH"
 PK1_DIL_QUAD_ORDER = "FIFTH"
-USE_BOUNDARY_MESH = TRUE
 
 // solver parameters
 IB_DELTA_FUNCTION          = "PIECEWISE_LINEAR"            // the type of smoothed delta function to use for Lagrangian-Eulerian interaction
-SPLIT_FORCES               = TRUE             // whether to split interior and boundary forces
-USE_JUMP_CONDITIONS        = TRUE             // whether to impose pressure jumps at fluid-structure interfaces
-CODIMENSION_ONE		   	   = TRUE			  // true if codimenion one, false if codimension is zero
+SPLIT_FORCES               = FALSE             // whether to split interior and boundary forces
+USE_JUMP_CONDITIONS        = FALSE             // whether to impose pressure jumps at fluid-structure interfaces
+CODIMENSION_ONE		   	   = FALSE			  // true if codimenion one, false if codimension is zero
 
 USE_CONSISTENT_MASS_MATRIX = TRUE              // whether to use a consistent or lumped mass matrix
 IB_POINT_DENSITY           = 4.0               // approximate density of IB quadrature points for Lagrangian-Eulerian interaction
@@ -34,7 +33,7 @@ CONVECTIVE_OP_TYPE         = "PPM"             // convective differencing discre
 CONVECTIVE_FORM            = "ADVECTIVE"       // how to compute the convective terms
 NORMALIZE_PRESSURE         = FALSE             // whether to explicitly force the pressure to have mean zero
 CFL_MAX                    = 0.2               // maximum CFL number
-DT                         = 0.1*CFL_MAX*DX    // maximum timestep size
+DT                         = 0.05*CFL_MAX*DX    // maximum timestep size
 ERROR_ON_DT_CHANGE         = TRUE              // whether to emit an error message if the time step size changes
 VORTICITY_TAGGING          = TRUE              // whether to tag cells for refinement based on vorticity thresholds
 TAG_BUFFER                 = 1                 // size of tag buffer used by grid generation algorithm
@@ -109,7 +108,7 @@ IBFEMethod {
    IB_delta_fcn                = IB_DELTA_FUNCTION
    split_forces                = SPLIT_FORCES
    use_jump_conditions         = USE_JUMP_CONDITIONS
-   codimension_zero			   = CODIMENSION_ZERO
+   codimension_ONE			   = CODIMENSION_ONE
    use_consistent_mass_matrix  = USE_CONSISTENT_MASS_MATRIX
    IB_point_density            = IB_POINT_DENSITY
 }
@@ -172,7 +171,7 @@ Main {
 // visualization dump parameters
    viz_writer                  = "VisIt","ExodusII"
    viz_dump_interval           = 100
-   viz_dump_dirname            = "viz_IB2d_split_real"
+   viz_dump_dirname            = "viz_IB2d_codimension_zero"
    visit_number_procs_per_file = 1
 
 // restart dump parameters

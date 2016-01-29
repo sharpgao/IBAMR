@@ -736,7 +736,6 @@ IBFEMethod::spreadForce(const int f_data_idx,
         // If jump condition is not used but the forces are split then the transmission force is spread on the immersed boundary.
 		if (!d_codimension_one)
 		{
-			pout<<"this is the codiemnsion zero!!"<<"\n";
 			
 			d_fe_data_managers[part]->spread(
 				f_data_idx, *F_ghost_vec, *X_ghost_vec, FORCE_SYSTEM_NAME, f_phys_bdry_op, data_time);
@@ -755,7 +754,6 @@ IBFEMethod::spreadForce(const int f_data_idx,
 			}	
 		}
 		else{
-			pout<<"this is the codiemnsion one!!"<<"\n";
 			
 			if (d_use_jump_conditions)
 			{
@@ -2077,7 +2075,7 @@ IBFEMethod::imposeJumpConditions(const int f_data_idx,
     const MeshBase& mesh = equation_systems->get_mesh();
     const BoundaryInfo& boundary_info = *mesh.boundary_info;
     const unsigned int dim = mesh.mesh_dimension();
-    if (d_codimension_one) TBOX_ASSERT(dim == NDIM);
+    if (!d_codimension_one) TBOX_ASSERT(dim == NDIM);
 
     // Extract the FE systems and DOF maps, and setup the FE object.
     System& G_system = equation_systems->get_system(FORCE_SYSTEM_NAME);
@@ -2349,10 +2347,6 @@ IBFEMethod::imposeJumpConditions(const int f_data_idx,
                         
 						//// This will cache the point to the right(or top) of the intersection along the side cell
   
-
-							//~ for (unsigned int dd = 0; dd < NDIM && dd!=axis; ++dd)
-							//~ {
-								
 #if (NDIM == 2)
 
                         for (unsigned int k = 0; k < intersectionsSide.size(); ++k)
@@ -2613,6 +2607,7 @@ IBFEMethod::imposeJumpConditions(const int f_data_idx,
 							//***********function so we don't have to copy the same chunk **************************//
 							//************of code for the other intersection set ********************************//
 							F.zero();
+							
 
 							for (unsigned int k = 0; k < num_PK1_fcns; ++k)
 							{
@@ -2687,7 +2682,7 @@ IBFEMethod::imposeJumpConditions(const int f_data_idx,
 						}
                 
                 
-			}
+				}
 			
 			
 			
