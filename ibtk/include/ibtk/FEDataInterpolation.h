@@ -98,6 +98,21 @@ public:
         d_eval_JxW = true;
         return;
     }
+    
+    inline void evalElementTangentXi()
+    {
+        TBOX_ASSERT(!d_initialized);
+        d_eval_dxyzdxi = true;
+        return;
+    }
+    
+    inline void evalElementTangentEta()
+    {
+        TBOX_ASSERT(!d_initialized);
+        d_eval_dxyzdeta = true;
+        return;
+    }
+    
 
     inline void evalQuadraturePointsFace()
     {
@@ -142,6 +157,22 @@ public:
         TBOX_ASSERT(d_initialized);
         TBOX_ASSERT(d_eval_JxW);
         return *d_JxW;
+    }
+    
+    
+    inline const std::vector<libMesh::RealGradient>& getElementTangentXi() const
+    {
+        TBOX_ASSERT(d_initialized);
+        TBOX_ASSERT(d_eval_dxyzdxi);
+        return *d_dxyzdxi;
+    }
+    
+    
+    inline const std::vector<libMesh::RealGradient>& getElementTangentEta() const
+    {
+        TBOX_ASSERT(d_initialized);
+        TBOX_ASSERT(d_eval_dxyzdeta);
+        return *d_dxyzdeta;
     }
 
     inline const std::vector<libMesh::Point>& getQuadraturePointsFace() const
@@ -331,9 +362,10 @@ private:
     const unsigned int d_dim;
     FEDataManager* const d_fe_data_manager;
     bool d_initialized;
-    bool d_eval_q_point, d_eval_JxW, d_eval_q_point_face, d_eval_JxW_face, d_eval_normal_face;
+    bool d_eval_q_point, d_eval_JxW, d_eval_dxyzdxi, d_eval_dxyzdeta, d_eval_q_point_face, d_eval_JxW_face, d_eval_normal_face;
     libMesh::QBase *d_qrule, *d_qrule_face;
     const std::vector<libMesh::Point> *d_q_point, *d_q_point_face;
+    const std::vector<libMesh::RealGradient> *d_dxyzdxi, *d_dxyzdeta;
     const std::vector<double> *d_JxW, *d_JxW_face;
     const std::vector<libMesh::Point>* d_normal_face;
 

@@ -49,6 +49,8 @@ FEDataInterpolation::FEDataInterpolation(const unsigned int dim, FEDataManager* 
       d_initialized(false),
       d_eval_q_point(false),
       d_eval_JxW(false),
+      d_eval_dxyzdxi(false),
+      d_eval_dxyzdeta(false),
       d_eval_q_point_face(false),
       d_eval_JxW_face(false),
       d_eval_normal_face(false),
@@ -57,6 +59,8 @@ FEDataInterpolation::FEDataInterpolation(const unsigned int dim, FEDataManager* 
       d_q_point(NULL),
       d_q_point_face(NULL),
       d_JxW(NULL),
+      d_dxyzdxi(NULL),
+      d_dxyzdeta(NULL),
       d_JxW_face(NULL),
       d_normal_face(NULL),
       d_current_elem(NULL)
@@ -326,6 +330,8 @@ FEDataInterpolation::init(const bool use_IB_ghosted_vecs)
             if (d_qrule) fe->attach_quadrature_rule(d_qrule);
             if (d_eval_q_point && !d_q_point) d_q_point = &fe->get_xyz();
             if (d_eval_JxW && !d_JxW) d_JxW = &fe->get_JxW();
+            if (d_eval_dxyzdxi && !d_dxyzdxi) d_dxyzdxi = &fe->get_dxyzdxi();
+            if (d_eval_dxyzdeta && !d_dxyzdeta) d_dxyzdeta = &fe->get_dxyzdeta();
             if (d_eval_phi[fe_type_idx]) d_phi[fe_type_idx] = &fe->get_phi();
             if (d_eval_dphi[fe_type_idx]) d_dphi[fe_type_idx] = &fe->get_dphi();
         }
