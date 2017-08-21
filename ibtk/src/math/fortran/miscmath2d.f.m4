@@ -418,3 +418,183 @@ c
       end
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+c     Carry out fast sweeping algorithm
+c
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      subroutine fastsweep2d(
+     &     U,U_gcw,
+     &     ilower0,iupper0,
+     &     ilower1,iupper1,
+     &     dx)
+c
+      implicit none
+c
+c     Input.
+c
+      INTEGER ilower0,iupper0
+      INTEGER ilower1,iupper1
+      INTEGER U_gcw
+
+c
+c     Input/Output.
+c
+      REAL U(CELL2d(ilower,iupper,U_gcw))
+      REAL dx(0:NDIM-1)
+c
+c     Local variables.
+c
+      INTEGER i0,i1
+      REAL    a,b
+      REAL    hx,hy
+      REAL    Q,R,S
+      REAL    dbar
+c
+c     Fast-sweeping algorithm
+c
+
+      
+c     Do the four sweeping directions.
+      do i1 = ilower1,iupper1
+         do i0 = ilower0,iupper0
+            hx = dx(0)
+            hy = dx(1)
+            a  = dmin1(U(i0-1,i1),U(i0+1,i1))
+            b  = dmin1(U(i0,i1-1),U(i0,i1+1))
+            
+c           Take care of Dirichlet boundaries
+            if (a < 0.d0) then
+              a  = 0.d0
+              hx = hx/2.d0
+            endif
+            
+            if (b < 0.d0) then
+              b  = 0.d0
+              hy = hy/2.d0
+            endif
+            
+            if (b-a .gt. hx) then
+              dbar = a + hx
+            
+            elseif (a-b .gt. hy) then
+              dbar = b + hy
+            
+            else
+              Q = hx*hx + hy*hy
+              R = -2.d0*(hy*hy*a + hx*hx*b)
+              S = hy*hy*a*a + hx*hx*b*b - hx*hx*hy*hy
+              dbar = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+            endif
+                        
+            U(i0,i1) = dmin1(U(i0,i1),dbar)
+
+            enddo
+      enddo
+      
+      do i1 = ilower1,iupper1
+         do i0 = iupper0,ilower0,-1
+            hx = dx(0)
+            hy = dx(1)
+            a  = dmin1(U(i0-1,i1),U(i0+1,i1))
+            b  = dmin1(U(i0,i1-1),U(i0,i1+1))
+            
+            if (a < 0.d0) then
+              a  = 0.d0
+              hx = hx/2.d0
+            endif
+            
+            if (b < 0.d0) then
+              b  = 0.d0
+              hy = hy/2.d0
+            endif
+            
+            if (b-a .gt. hx) then
+              dbar = a + hx
+            
+            elseif (a-b .gt. hy) then
+              dbar = b + hy
+            
+            else
+              Q = hx*hx + hy*hy
+              R = -2.d0*(hy*hy*a + hx*hx*b)
+              S = hy*hy*a*a + hx*hx*b*b - hx*hx*hy*hy
+              dbar = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+            endif
+            
+            U(i0,i1) = dmin1(U(i0,i1),dbar)
+         enddo
+      enddo
+      
+      do i1 = iupper1,ilower1,-1
+         do i0 = iupper0,ilower0,-1
+            hx = dx(0)
+            hy = dx(1)
+            a  = dmin1(U(i0-1,i1),U(i0+1,i1))
+            b  = dmin1(U(i0,i1-1),U(i0,i1+1))
+            
+            if (a < 0.d0) then
+              a  = 0.d0
+              hx = hx/2.d0
+            endif
+            
+            if (b < 0.d0) then
+              b  = 0.d0
+              hy = hy/2.d0
+            endif
+            
+            if (b-a .gt. hx) then
+              dbar = a + hx
+            
+            elseif (a-b .gt. hy) then
+              dbar = b + hy
+            
+            else
+              Q = hx*hx + hy*hy
+              R = -2.d0*(hy*hy*a + hx*hx*b)
+              S = hy*hy*a*a + hx*hx*b*b - hx*hx*hy*hy
+              dbar = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+            endif
+            
+            U(i0,i1) = dmin1(U(i0,i1),dbar)
+         enddo
+      enddo
+      
+      do i1 = iupper1,ilower1,-1
+         do i0 = ilower0,iupper0
+            hx = dx(0)
+            hy = dx(1)
+            a  = dmin1(U(i0-1,i1),U(i0+1,i1))
+            b  = dmin1(U(i0,i1-1),U(i0,i1+1))
+            
+            if (a < 0.d0) then
+              a  = 0.d0
+              hx = hx/2.d0
+            endif
+            
+            if (b < 0.d0) then
+              b  = 0.d0
+              hy = hy/2.d0
+            endif
+            
+            if (b-a .gt. hx) then
+              dbar = a + hx
+            
+            elseif (a-b .gt. hy) then
+              dbar = b + hy
+            
+            else
+              Q = hx*hx + hy*hy
+              R = -2.d0*(hy*hy*a + hx*hx*b)
+              S = hy*hy*a*a + hx*hx*b*b - hx*hx*hy*hy
+              dbar = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+            endif
+            
+            U(i0,i1) = dmin1(U(i0,i1),dbar)
+         enddo
+      enddo
+
+      return
+      end
+c
+c

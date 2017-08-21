@@ -52,6 +52,8 @@
 #include "NodeVariable.h"
 #include "OuterfaceVariable.h"
 #include "OutersideVariable.h"
+#include "OuternodeVariable.h"
+#include "OuteredgeVariable.h"
 #include "PatchHierarchy.h"
 #include "PoissonSpecifications.h"
 #include "RobinBcCoefStrategy.h"
@@ -762,6 +764,50 @@ public:
                 SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > src_var,
                 SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
                 double src_ghost_fill_time);
+    
+    /*!
+     * \brief Interpolate to a node-centered normal vector/tensor field from a
+     * cell-centered vector/tensor field.
+     *
+     * Interpolate a vector or tensor field from one variable type to another
+     * using (second-order accurate) averaging.  When the interpolation occurs
+     * over multiple levels of the hierarchy, second order interpolation is used
+     * at the coarse-fine interface to correct fine values along the interface.
+     * When specified, coarse values on each coarse-fine interface are
+     * synchronized after performing the interpolation.
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void interp(int dst_idx,
+                SAMRAI::tbox::Pointer<SAMRAI::pdat::NodeVariable<NDIM, double> > dst_var,
+                bool dst_cf_bdry_synch,
+                int src_idx,
+                SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > src_var,
+                SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
+                double src_ghost_fill_time);
+
+    /*!
+     * \brief Interpolate to an edge-centered normal vector/tensor field from a
+     * cell-centered vector/tensor field.
+     *
+     * Interpolate a vector or tensor field from one variable type to another
+     * using (second-order accurate) averaging.  When the interpolation occurs
+     * over multiple levels of the hierarchy, second order interpolation is used
+     * at the coarse-fine interface to correct fine values along the interface.
+     * When specified, coarse values on each coarse-fine interface are
+     * synchronized after performing the interpolation.
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void interp(int dst_idx,
+                SAMRAI::tbox::Pointer<SAMRAI::pdat::EdgeVariable<NDIM, double> > dst_var,
+                bool dst_cf_bdry_synch,
+                int src_idx,
+                SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > src_var,
+                SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
+                double src_ghost_fill_time);
 
     /*!
      * \brief Compute the Laplacian of a scalar quantity using centered
@@ -842,6 +888,41 @@ public:
                     double gamma = 0.0,
                     int src2_idx = -1,
                     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > src2_var = NULL);
+    
+     /*!
+     * \brief Compute dst = alpha div coef ((grad u) + (grad u)^T)
+     * via tau = 1/2(grad(u) + grad(u)^T). This function takes in the coef as both a
+     * cell-centered quantity and an edge centered quantity. The user must interpolate
+     * cells onto edges or edges onto cells and pass both.
+     * 
+     * src1_cc is the cell centered stresses (tau_xx,tau_yy,tau_zz) (depth = 3)
+     * src1_ec is the edge centered stresses (tau_xy,tau_xz,tau_yz)
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void vc_laplace(int dst_idx,
+                    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > dst_var,
+                    double alpha,
+                    int coef_cc_idx,
+                    SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > coef_cc_var,
+		    int coef_ec_idx,
+		    SAMRAI::tbox::Pointer<SAMRAI::pdat::EdgeVariable<NDIM, double> > coef_ec_var,
+                    int src1_cc_idx,
+                    SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > src1_cc_var,
+		    int src1_ec_idx,
+		    SAMRAI::tbox::Pointer<SAMRAI::pdat::EdgeVariable<NDIM, double> > src1_ec_var,
+                    SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src1_ghost_fill,
+		    double src1_ghost_fill_time);
+    
+    /*!
+     * \brief Carry out the fast-sweeping algorithm on dst
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void fastSweep(int dst_idx,
+		   SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > dst_var);
 
     /*!
      * \brief Compute dst = alpha src1 + beta src2, pointwise.
@@ -1187,6 +1268,42 @@ public:
                      SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > src_var,
                      SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
                      double src_ghost_fill_time);
+    
+    /*!
+     * \brief Compute the node-centered strain rate of a side-centered vector field
+     * using centered differences.
+     *
+     * Sets dst = strain src.
+     *
+     * Compute the strain of a vector field using centered differences.
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void strain_rate(int dst_idx,
+		     SAMRAI::tbox::Pointer<SAMRAI::pdat::NodeVariable<NDIM, double> > dst_var,
+		     int src_idx,
+		     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > src_var,
+		     SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
+		     double src_ghost_fill_time);
+    
+    /*!
+     * \brief Compute the edge-centered strain rate of a side-centered vector field
+     * using centered differences.
+     *
+     * Sets dst = strain src.
+     *
+     * Compute the strain of a vector field using centered differences.
+     *
+     * \see setPatchHierarchy
+     * \see resetLevels
+     */
+    void strain_rate(int dst_idx,
+		     SAMRAI::tbox::Pointer<SAMRAI::pdat::EdgeVariable<NDIM, double> > dst_var,
+		     int src_idx,
+		     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > src_var,
+		     SAMRAI::tbox::Pointer<HierarchyGhostCellInterpolation> src_ghost_fill,
+		     double src_ghost_fill_time);
 
 private:
     /*!
@@ -1237,6 +1354,18 @@ private:
      * level from the next finer level.
      */
     void xeqScheduleOutersideRestriction(int dst_idx, int src_idx, int dst_ln);
+    
+    /*!
+     * \brief Execute schedule for restricting Outernode data to the specified
+     * level from the next finer level.
+     */
+    void xeqScheduleOuternodeRestriction(int dst_idx, int src_idx, int dst_ln);
+    
+    /*!
+     * \brief Execute schedule for restricting Outeredge data to the specified
+     * level from the next finer level.
+     */
+    void xeqScheduleOuteredgeRestriction(int dst_idx, int src_idx, int dst_ln);
 
     /*!
      * \brief Reset cell-centered weights, allocating patch data if needed.
@@ -1264,19 +1393,28 @@ private:
     // Scratch Variables.
     SAMRAI::tbox::Pointer<SAMRAI::pdat::FaceVariable<NDIM, double> > d_fc_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_sc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::NodeVariable<NDIM, double> > d_nc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::EdgeVariable<NDIM, double> > d_ec_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::OuterfaceVariable<NDIM, double> > d_of_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::OutersideVariable<NDIM, double> > d_os_var;
-    int d_fc_idx, d_sc_idx, d_of_idx, d_os_idx;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::OuternodeVariable<NDIM, double> > d_on_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::OuteredgeVariable<NDIM, double> > d_oe_var;
+    int d_fc_idx, d_sc_idx, d_nc_idx, d_ec_idx, d_of_idx, d_os_idx, d_on_idx, d_oe_idx;
 
     // Communications operators, algorithms, and schedules.
     std::string d_coarsen_op_name;
     SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenOperator<NDIM> > d_of_coarsen_op;
     SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenOperator<NDIM> > d_os_coarsen_op;
+    SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenOperator<NDIM> > d_on_coarsen_op;
+    SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenOperator<NDIM> > d_oe_coarsen_op;
     SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenAlgorithm<NDIM> > d_of_coarsen_alg;
     SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenAlgorithm<NDIM> > d_os_coarsen_alg;
+    SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenAlgorithm<NDIM> > d_on_coarsen_alg;
+    SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenAlgorithm<NDIM> > d_oe_coarsen_alg;
     std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenSchedule<NDIM> > > d_of_coarsen_scheds;
     std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenSchedule<NDIM> > > d_os_coarsen_scheds;
-
+    std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenSchedule<NDIM> > > d_on_coarsen_scheds;
+    std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::CoarsenSchedule<NDIM> > > d_oe_coarsen_scheds;
     // Hierarchy data operations.
     SAMRAI::tbox::Pointer<SAMRAI::math::HierarchyCellDataOpsReal<NDIM, double> > d_hier_cc_data_ops;
     SAMRAI::tbox::Pointer<SAMRAI::math::HierarchyFaceDataOpsReal<NDIM, double> > d_hier_fc_data_ops;

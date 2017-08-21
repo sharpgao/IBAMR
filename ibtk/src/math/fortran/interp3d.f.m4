@@ -512,3 +512,75 @@ c
       end
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     Added by Nishant Nangia (NN) on Feb 23, 2016
+c     Compute the edge centered scalar field U0, U1, U2 from 
+c     the cell centered scalar field V using simple averaging.
+c
+c     The U field is a scalar, but each set of edges are split up
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      subroutine ctoeinterp3d(
+     &     U0,U1,U2,U_gcw,
+     &     V,V_gcw,
+     &     ilower0,iupper0,
+     &     ilower1,iupper1,
+     &     ilower2,iupper2)
+     
+c
+      implicit none
+c
+c     Input.
+c
+      INTEGER U_gcw,V_gcw
+
+      INTEGER ilower0,iupper0
+      INTEGER ilower1,iupper1
+      INTEGER ilower2,iupper2
+
+      REAL V(CELL3d(ilower,iupper,V_gcw))
+c
+c     Output.
+c
+      REAL U0(EDGE3d0(ilower,iupper,U_gcw))
+      REAL U1(EDGE3d1(ilower,iupper,U_gcw))
+      REAL U2(EDGE3d2(ilower,iupper,U_gcw))
+c
+c     Local variables.
+c
+      INTEGER i0,i1,i2
+
+c     Compute the edge centered interpolation of V
+      
+      do i2 = ilower2,iupper2+1
+         do i1 = ilower1,iupper1+1
+            do i0 = ilower0,iupper0
+               U0(i0,i1,i2) = 0.25d0*(V(i0,i1-1,i2) + V(i0,i1,i2-1)  
+     &                      + V(i0,i1,i2) + V(i0,i1-1,i2-1))
+     
+            enddo
+         enddo
+      enddo 
+  
+      do i2 = ilower2,iupper2+1
+         do i1 = ilower1,iupper1
+            do i0 = ilower0,iupper0+1
+               U1(i0,i1,i2) = 0.25d0*(V(i0,i1,i2) + V(i0,i1,i2-1)  
+     &                      + V(i0-1,i1,i2) + V(i0-1,i1,i2-1))
+
+            enddo
+         enddo
+      enddo
+
+      do i2 = ilower2,iupper2
+         do i1 = ilower1,iupper1+1
+            do i0 = ilower0,iupper0+1
+               U2(i0,i1,i2) = 0.25d0*(V(i0,i1,i2) + V(i0,i1-1,i2)  
+     &                      + V(i0-1,i1,i2) + V(i0-1,i1-1,i2))
+
+            enddo
+         enddo
+      enddo
+
+c
+      return
+      end

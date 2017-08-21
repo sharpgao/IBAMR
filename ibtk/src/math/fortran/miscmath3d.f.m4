@@ -450,3 +450,435 @@ c
       end
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+c     Helper subroutines for fast sweeping algorithm
+c
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
+c     Get neighboring points
+      subroutine getneighbors(
+     &     U,U_gcw,
+     &     ilower0,iupper0,
+     &     ilower1,iupper1,
+     &     ilower2,iupper2,
+     &     i0,i1,i2,
+     &     a,b,c,
+     &     hx,hy,hz,
+     &     dx)
+c
+      implicit none
+c
+c     Input.
+c
+      INTEGER i0,i1,i2
+      INTEGER ilower0,iupper0
+      INTEGER ilower1,iupper1
+      INTEGER ilower2,iupper2
+      INTEGER U_gcw
+      REAL dx(0:NDIM-1)
+
+c
+c     Output.
+c
+      REAL U(CELL3d(ilower,iupper,U_gcw))
+      REAL a,b,c
+      REAL hx,hy,hz
+      
+c     Get values for grid spacings and neighboring points.
+      hx = dx(0)
+      hy = dx(1)
+      hz = dx(2)
+      a  = dmin1(U(i0-1,i1,i2),U(i0+1,i1,i2))
+      b  = dmin1(U(i0,i1-1,i2),U(i0,i1+1,i2))
+      c  = dmin1(U(i0,i1,i2-1),U(i0,i1,i2+1))
+            
+c     Take care of Dirichlet boundaries.
+      if (a < 0.d0) then
+         a  = 0.d0
+         hx = hx/2.d0
+      endif
+            
+      if (b < 0.d0) then
+         b  = 0.d0
+         hy = hy/2.d0
+      endif
+               
+      if (c < 0.d0) then
+         c  = 0.d0
+         hz = hz/2.d0
+      endif
+      
+      
+      
+      return
+      end
+c
+c     Sort the neighboring points
+      subroutine sortneighbors(
+     &     a,b,c,
+     &     hx,hy,hz,
+     &     a1,a2,a3,
+     &     h1,h2,h3)
+c
+      implicit none
+c
+c     Input.
+c
+      REAL a,b,c
+      REAL hx,hy,hz
+      
+c
+c     Output.
+c
+      REAL a1,a2,a3
+      REAL h1,h2,h3
+      
+c     Sort a,b,c
+      if (a .le. b) then
+         if (a .le. c) then
+            if(b .le. c) then
+               a1 = a; a2 = b; a3 = c
+               h1 = hx; h2 = hy; h3 = hz
+            else
+               a1 = a; a2 = c; a3 = b
+               h1 = hx; h2 = hz; h3 = hy
+            endif
+         else
+            a1 = c; a2 = a; a3 = b
+            h1 = hz; h2 = hx; h3 = hy
+         endif
+      else 
+         if (b .le. c) then
+            if (a .le. c) then
+               a1 = b; a2 = a; a3 = c
+               h1 = hy; h2 = hx; h3 = hz
+            else
+               a1 = b; a2 = c; a3 = a
+               h1 = hy; h2 = hz; h3 = hx
+            endif
+         else
+            a1 = c; a2 = b; a3 = a
+            h1 = hz; h2 = hy; h3 = hx
+         endif
+      endif
+      
+      return
+      end
+c      
+c     Find dbar
+      subroutine computedbar(
+     &     dbar,
+     &     a1,a2,a3,
+     &     h1,h2,h3)
+c
+      implicit none
+
+c
+c     Input.
+c
+      REAL a1,a2,a3
+      REAL h1,h2,h3
+      
+c
+c     Output.
+c
+      REAL dbar
+
+c
+c     Local variables.
+c
+      REAL Q,R,S
+      REAL dtil
+      
+      
+c     Algorithm to find dbar
+      dtil = a1 + h1
+      if (dtil .le. a2) then
+         dbar = dtil
+      else
+         Q = h1*h1 + h2*h2
+         R = -2.d0*(h2*h2*a1 + h1*h1*a2)
+         S = h2*h2*a1*a1 + h1*h1*a2*a2 - h1*h1*h2*h2
+         dtil = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+      endif
+              
+      if (dtil .lt. a3) then
+         dbar = dtil
+              
+      else
+         Q = 1.d0/(h1*h1) + 1.d0/(h2*h2) + 1.d0/(h3*h3)
+         R = -2.d0*(a1/(h1*h1)+a2/(h2*h2)+a3/(h3*h3))
+         S = a1*a1/(h1*h1)+a2*a2/(h2*h2)+a3*a3/(h3*h3)-1.d0
+         dtil = (-R + sqrt(R*R-4.d0*Q*S))/(2.d0*Q)
+         dbar = dtil
+      endif
+                    
+      return
+      end
+               
+
+      
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+c     Carry out fast sweeping algorithm
+c
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      subroutine fastsweep3d(
+     &     U,U_gcw,
+     &     ilower0,iupper0,
+     &     ilower1,iupper1,
+     &     ilower2,iupper2,
+     &     dx)
+c
+      implicit none
+c
+c     Input.
+c
+      INTEGER ilower0,iupper0
+      INTEGER ilower1,iupper1
+      INTEGER ilower2,iupper2
+      INTEGER U_gcw
+
+c
+c     Input/Output.
+c
+      REAL U(CELL3d(ilower,iupper,U_gcw))
+      REAL dx(0:NDIM-1)
+c
+c     Local variables.
+c
+      INTEGER i0,i1,i2
+      REAL    a,b,c
+      REAL    a1,a2,a3
+      REAL    hx,hy,hz
+      REAL    h1,h2,h3
+      REAL    dbar
+c
+c     Fast-sweeping algorithm
+c
+
+      
+c     Do the eight sweeping directions
+      do i2 = ilower2,iupper2
+         do i1 = ilower1,iupper1
+            do i0 = ilower0,iupper0
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = ilower2,iupper2
+         do i1 = ilower1,iupper1
+            do i0 = iupper0,ilower0,-1
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+
+      do i2 = ilower2,iupper2
+         do i1 = iupper1,ilower1,-1
+            do i0 = ilower0,iupper0
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = ilower2,iupper2
+         do i1 = iupper1,ilower1,-1
+            do i0 = iupper0,ilower0,-1
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = iupper2,ilower2,-1
+         do i1 = ilower1,iupper1
+            do i0 = ilower0,iupper0
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = iupper2,ilower2,-1
+         do i1 = iupper1,ilower1,-1
+            do i0 = ilower0,iupper0
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = iupper2,ilower2,-1
+         do i1 = ilower1,iupper1
+            do i0 = iupper0,ilower0,-1
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      do i2 = iupper2,ilower2,-1
+         do i1 = iupper1,ilower1,-1
+            do i0 = iupper0,ilower0,-1
+              
+c              Get values for grid spacings and neighboring points.
+               call getneighbors (U,U_gcw,
+     &                            ilower0,iupper0,
+     &                            ilower1,iupper1,
+     &                            ilower2,iupper2,
+     &                            i0,i1,i2,a,b,c,hx,hy,hz,dx)
+               
+c             Sort a,b,c.
+              call sortneighbors (a,b,c,
+     &                            hx,hy,hz,
+     &                            a1,a2,a3,
+     &                            h1,h2,h3)
+              
+c             Compute dbar
+              call computedbar(dbar,a1,a2,a3,h1,h2,h3)
+                    
+                        
+               U(i0,i1,i2) = dmin1(U(i0,i1,i2),dbar)
+
+            enddo
+         enddo
+      enddo
+      
+      
+      return
+      end
+c
+c
