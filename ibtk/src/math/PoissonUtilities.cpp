@@ -362,16 +362,37 @@ PoissonUtilities::computeMatrixCoefficients(SideData<NDIM, double>& matrix_coeff
 #if !defined(NDEBUG)
     TBOX_ASSERT(matrix_coefficients.getDepth() == stencil_sz);
 #endif
-    if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+//     if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+    if (!poisson_spec.dIsConstant())
     {
         TBOX_ERROR(
-            "PoissonUtilities::computeSCMatrixCoefficients() does not support non-constant "
+            "PoissonUtilities::computeSCMatrixCoefficients() does not support variable diffusion "
             "coefficient problems\n");
     }
-    const double C = (poisson_spec.cIsZero() ? 0.0 : poisson_spec.getCConstant());
+//     const double C = (poisson_spec.cIsZero() ? 0.0 : poisson_spec.getCConstant());
     const double D = poisson_spec.getDConstant();
 
     const Box<NDIM>& patch_box = patch->getBox();
+    SideData<NDIM, double> diagonal(patch_box, 1, IntVector<NDIM>(0));
+    
+    // Compute all diagonal matrix coefficients relating to (possibly variable) C 
+    // for all cell sides, including those
+    // that are adjacent to the physical boundary; however, do not yet take
+    // physical boundary conditions into account.  Boundary conditions are
+    // handled subsequently.
+    
+    // Set C to zero if C is zero, or C is variable. This is done to not disrupt constant
+    // coefficient solvers
+    double C = 0.0;
+    if (poisson_spec.cIsZero() || poisson_spec.cIsConstant())
+    {
+    C = (poisson_spec.cIsZero() ? 0.0 : poisson_spec.getCConstant());
+    }
+    else
+    {
+    diagonal.copy(*patch->getPatchData(poisson_spec.getCPatchDataId()));
+    }
+    
     const Array<BoundaryBox<NDIM> > physical_codim1_boxes =
         PhysicalBoundaryUtilities::getPhysicalBoundaryCodim1Boxes(*patch);
     const int n_physical_codim1_boxes = physical_codim1_boxes.size();
@@ -392,7 +413,7 @@ PoissonUtilities::computeMatrixCoefficients(SideData<NDIM, double>& matrix_coeff
         }
     }
 
-    // Compute all matrix coefficients, including those on the physical
+    // Compute all matrix coefficients relating to constant D, including those on the physical
     // boundary; however, do not yet take physical boundary conditions into
     // account.  Boundary conditions are handled subsequently.
     for (unsigned int axis = 0; axis < NDIM; ++axis)
@@ -406,12 +427,26 @@ PoissonUtilities::computeMatrixCoefficients(SideData<NDIM, double>& matrix_coeff
             mat_vals[stencil_index_diag] -= D / dx_sq;     // diagonal
             mat_vals[stencil_index_diag] -= D / dx_sq;     // diagonal
         }
-        mat_vals[stencil_index_diag] += C; // diagonal
-
+        mat_vals[stencil_index_diag] += C; // diagonal, will be 0 for variable C
+        
         for (int stencil_index = 0; stencil_index < stencil_sz; ++stencil_index)
         {
             matrix_coefficients.fill(mat_vals[stencil_index], stencil_index);
         }
+    }
+    
+    // Set variable coefficient diagonal if necessary
+    if (poisson_spec.cIsVariable())
+    {
+    for (unsigned int axis = 0; axis < NDIM; ++axis)
+    {
+        for (Box<NDIM>::Iterator b(SideGeometry<NDIM>::toSideBox(patch_box, axis)); b; b++)
+        {
+        const Index<NDIM>& i = b();
+        const SideIndex<NDIM> ilower(i, axis, SideIndex<NDIM>::Lower);
+        matrix_coefficients(ilower, stencil_index_diag) += diagonal(ilower);
+        }
+    }
     }
 
     // Modify matrix coefficients to account for physical boundary conditions
@@ -757,10 +792,11 @@ PoissonUtilities::adjustRHSAtPhysicalBoundary(SideData<NDIM, double>& rhs_data,
 #if !defined(NDEBUG)
     TBOX_ASSERT(static_cast<int>(bc_coefs.size()) == NDIM);
 #endif
-    if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+//     if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+    if (!poisson_spec.dIsConstant())
     {
         TBOX_ERROR(
-            "PoissonUtilities::adjustRHSAtPhysicalBoundary() does not support non-constant "
+            "PoissonUtilities::adjustRHSAtPhysicalBoundary() does not support variable diffusion "
             "coefficient problems\n");
     }
     const Box<NDIM>& patch_box = patch->getBox();
@@ -1031,10 +1067,11 @@ PoissonUtilities::adjustRHSAtCoarseFineBoundary(SideData<NDIM, double>& rhs_data
 {
     const int depth = rhs_data.getDepth();
     TBOX_ASSERT(depth == sol_data.getDepth());
-    if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+//     if (!(poisson_spec.cIsZero() || poisson_spec.cIsConstant()) || !poisson_spec.dIsConstant())
+    if (!poisson_spec.dIsConstant())
     {
         TBOX_ERROR(
-            "PoissonUtilities::adjustRHSAtCoarseFineBoundary() does not support non-constant "
+            "PoissonUtilities::adjustRHSAtCoarseFineBoundary() does not support variable diffusion "
             "coefficient problems\n");
     }
     const Box<NDIM>& patch_box = patch->getBox();

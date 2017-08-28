@@ -94,16 +94,31 @@
 
 // FORTRAN ROUTINES
 #if (NDIM == 2)
+// Smoothing for constant D and C
 #define GS_SMOOTH_FC IBTK_FC_FUNC(gssmooth2d, GSSMOOTH2D)
 #define GS_SMOOTH_MASK_FC IBTK_FC_FUNC(gssmoothmask2d, GSSMOOTHMASK2D)
 #define RB_GS_SMOOTH_FC IBTK_FC_FUNC(rbgssmooth2d, RBGSSMOOTH2D)
 #define RB_GS_SMOOTH_MASK_FC IBTK_FC_FUNC(rbgssmoothmask2d, RBGSSMOOTHMASK2D)
+
+// Smoothing for constant D and variable C
+#define GS_SMOOTH_VAR_C_FC IBTK_FC_FUNC(gssmoothvarc2d, GSSMOOTHVARC2D)
+#define GS_SMOOTH_VAR_C_MASK_FC IBTK_FC_FUNC(gssmoothvarcmask2d, GSSMOOTHVARCMASK2D)
+#define RB_GS_SMOOTH_VAR_C_FC IBTK_FC_FUNC(rbgssmoothvarc2d, RBGSSMOOTHVARC2D)
+#define RB_GS_SMOOTH_VAR_C_MASK_FC IBTK_FC_FUNC(rbgssmoothvarcmask2d, RBGSSMOOTHMASKVARC2D)
 #endif
+
 #if (NDIM == 3)
+// Smoothing for constant D and C
 #define GS_SMOOTH_FC IBTK_FC_FUNC(gssmooth3d, GSSMOOTH3D)
 #define GS_SMOOTH_MASK_FC IBTK_FC_FUNC(gssmoothmask3d, GSSMOOTHMASK3D)
 #define RB_GS_SMOOTH_FC IBTK_FC_FUNC(rbgssmooth3d, RBGSSMOOTH3D)
 #define RB_GS_SMOOTH_MASK_FC IBTK_FC_FUNC(rbgssmoothmask3d, RBGSSMOOTHMASK3D)
+
+// Smoothing for constant D and variable C
+#define GS_SMOOTH_VAR_C_FC IBTK_FC_FUNC(gssmoothvarc3d, GSSMOOTHVARC3D)
+#define GS_SMOOTH_VAR_C_MASK_FC IBTK_FC_FUNC(gssmoothvarcmask3d, GSSMOOTHVARCMASK3D)
+#define RB_GS_SMOOTH_VAR_C_FC IBTK_FC_FUNC(rbgssmoothvarc3d, RBGSSMOOTHVARC3D)
+#define RB_GS_SMOOTH_VAR_C_MASK_FC IBTK_FC_FUNC(rbgssmoothvarcmask3d, RBGSSMOOTHMASKVARC3D)
 #endif
 
 // Function interfaces
@@ -177,6 +192,81 @@ void RB_GS_SMOOTH_MASK_FC(double* U,
 #endif
                           const double* dx,
                           const int& red_or_black);
+
+void GS_SMOOTH_VAR_C_FC(double* U,
+      const int& U_gcw,
+      const double& alpha,
+      const double* BETA,
+      const int& BETA_gcw,
+      const double* F,
+      const int& F_gcw,
+      const int& ilower0,
+      const int& iupper0,
+      const int& ilower1,
+      const int& iupper1,
+#if (NDIM == 3)
+      const int& ilower2,
+      const int& iupper2,
+#endif
+      const double* dx);
+
+void GS_SMOOTH_VAR_C_MASK_FC(double* U,
+           const int& U_gcw,
+           const double& alpha,
+           const double* BETA,
+           const int& BETA_gcw,
+           const double* F,
+           const int& F_gcw,
+           const int* mask,
+           const int& mask_gcw,
+           const int& ilower0,
+           const int& iupper0,
+           const int& ilower1,
+           const int& iupper1,
+#if (NDIM == 3)
+           const int& ilower2,
+           const int& iupper2,
+#endif
+           const double* dx);
+
+void RB_GS_SMOOTH_VAR_C_FC(double* U,
+         const int& U_gcw,
+         const double& alpha,
+         const double* BETA,
+         const int& BETA_gcw,
+         const double* F,
+         const int& F_gcw,
+         const int& ilower0,
+         const int& iupper0,
+         const int& ilower1,
+         const int& iupper1,
+#if (NDIM == 3)
+         const int& ilower2,
+         const int& iupper2,
+#endif
+         const double* dx,
+         const int& red_or_black);
+
+void RB_GS_SMOOTH_VAR_C_MASK_FC(double* U,
+        const int& U_gcw,
+        const double& alpha,
+        const double* BETA,
+        const int& BETA_gcw,
+        const double* F,
+        const int& F_gcw,
+        const int* mask,
+        const int& mask_gcw,
+        const int& ilower0,
+        const int& iupper0,
+        const int& ilower1,
+        const int& iupper1,
+#if (NDIM == 3)
+        const int& ilower2,
+        const int& iupper2,
+#endif
+        const double* dx,
+        const int& red_or_black);
+
 }
 
 /////////////////////////////// NAMESPACE ////////////////////////////////////
@@ -532,106 +622,223 @@ SCPoissonPointRelaxationFACOperator::smoothError(SAMRAIVectorReal<NDIM, double>&
 
             // Smooth the error using Gauss-Seidel.
             const double& alpha = d_poisson_spec.getDConstant();
-            const double& beta = d_poisson_spec.cIsZero() ? 0.0 : d_poisson_spec.getCConstant();
-            for (int axis = 0; axis < NDIM; ++axis)
-            {
-                const Box<NDIM> side_patch_box = SideGeometry<NDIM>::toSideBox(patch_box, axis);
-                for (int depth = 0; depth < error_data->getDepth(); ++depth)
-                {
-                    double* const U = error_data->getPointer(axis, depth);
-                    const int U_ghosts = (error_data->getGhostCellWidth()).max();
-                    const double* const F = residual_data->getPointer(axis, depth);
-                    const int F_ghosts = (residual_data->getGhostCellWidth()).max();
-                    const int* const mask = mask_data->getPointer(axis, depth);
-                    const int mask_ghosts = (mask_data->getGhostCellWidth()).max();
-                    if (patch_has_dirichlet_bdry && d_bc_helper->patchTouchesDirichletBoundaryAxis(patch, axis))
-                    {
-                        if (red_black_ordering)
-                        {
-                            int red_or_black = isweep % 2; // "red" = 0, "black" = 1
-                            RB_GS_SMOOTH_MASK_FC(U,
-                                                 U_ghosts,
-                                                 alpha,
-                                                 beta,
-                                                 F,
-                                                 F_ghosts,
-                                                 mask,
-                                                 mask_ghosts,
-                                                 side_patch_box.lower(0),
-                                                 side_patch_box.upper(0),
-                                                 side_patch_box.lower(1),
-                                                 side_patch_box.upper(1),
-#if (NDIM == 3)
-                                                 side_patch_box.lower(2),
-                                                 side_patch_box.upper(2),
-#endif
-                                                 dx,
-                                                 red_or_black);
-                        }
-                        else
-                        {
-                            GS_SMOOTH_MASK_FC(U,
-                                              U_ghosts,
-                                              alpha,
-                                              beta,
-                                              F,
-                                              F_ghosts,
-                                              mask,
-                                              mask_ghosts,
-                                              side_patch_box.lower(0),
-                                              side_patch_box.upper(0),
-                                              side_patch_box.lower(1),
-                                              side_patch_box.upper(1),
-#if (NDIM == 3)
-                                              side_patch_box.lower(2),
-                                              side_patch_box.upper(2),
-#endif
-                                              dx);
-                        }
-                    }
-                    else
-                    {
-                        if (red_black_ordering)
-                        {
-                            int red_or_black = isweep % 2; // "red" = 0, "black" = 1
-                            RB_GS_SMOOTH_FC(U,
-                                            U_ghosts,
-                                            alpha,
-                                            beta,
-                                            F,
-                                            F_ghosts,
-                                            side_patch_box.lower(0),
-                                            side_patch_box.upper(0),
-                                            side_patch_box.lower(1),
-                                            side_patch_box.upper(1),
-#if (NDIM == 3)
-                                            side_patch_box.lower(2),
-                                            side_patch_box.upper(2),
-#endif
-                                            dx,
-                                            red_or_black);
-                        }
-                        else
-                        {
-                            GS_SMOOTH_FC(U,
-                                         U_ghosts,
-                                         alpha,
-                                         beta,
-                                         F,
-                                         F_ghosts,
-                                         side_patch_box.lower(0),
-                                         side_patch_box.upper(0),
-                                         side_patch_box.lower(1),
-                                         side_patch_box.upper(1),
-#if (NDIM == 3)
-                                         side_patch_box.lower(2),
-                                         side_patch_box.upper(2),
-#endif
-                                         dx);
-                        }
-                    }
-                }
-            }
+      
+      // Constant C case
+      if (d_poisson_spec.cIsZero() || d_poisson_spec.cIsConstant())
+      {
+    const double& beta = d_poisson_spec.cIsZero() ? 0.0 : d_poisson_spec.getCConstant();
+    for (int axis = 0; axis < NDIM; ++axis)
+    {
+        const Box<NDIM> side_patch_box = SideGeometry<NDIM>::toSideBox(patch_box, axis);
+        for (int depth = 0; depth < error_data->getDepth(); ++depth)
+        {
+      double* const U = error_data->getPointer(axis, depth);
+      const int U_ghosts = (error_data->getGhostCellWidth()).max();
+      const double* const F = residual_data->getPointer(axis, depth);
+      const int F_ghosts = (residual_data->getGhostCellWidth()).max();
+      const int* const mask = mask_data->getPointer(axis, depth);
+      const int mask_ghosts = (mask_data->getGhostCellWidth()).max();
+      if (patch_has_dirichlet_bdry && d_bc_helper->patchTouchesDirichletBoundaryAxis(patch, axis))
+      {
+          if (red_black_ordering)
+          {
+        int red_or_black = isweep % 2; // "red" = 0, "black" = 1
+        RB_GS_SMOOTH_MASK_FC(U,
+                U_ghosts,
+                alpha,
+                beta,
+                F,
+                F_ghosts,
+                mask,
+                mask_ghosts,
+                side_patch_box.lower(0),
+                side_patch_box.upper(0),
+                side_patch_box.lower(1),
+                side_patch_box.upper(1),
+    #if (NDIM == 3)
+                side_patch_box.lower(2),
+                side_patch_box.upper(2),
+    #endif
+                dx,
+                red_or_black);
+          }
+          else
+          {
+        GS_SMOOTH_MASK_FC(U,
+              U_ghosts,
+              alpha,
+              beta,
+              F,
+              F_ghosts,
+              mask,
+              mask_ghosts,
+              side_patch_box.lower(0),
+              side_patch_box.upper(0),
+              side_patch_box.lower(1),
+              side_patch_box.upper(1),
+    #if (NDIM == 3)
+              side_patch_box.lower(2),
+              side_patch_box.upper(2),
+    #endif
+              dx);
+          }
+      }
+      else
+      {
+          if (red_black_ordering)
+          {
+        int red_or_black = isweep % 2; // "red" = 0, "black" = 1
+        RB_GS_SMOOTH_FC(U,
+            U_ghosts,
+            alpha,
+            beta,
+            F,
+            F_ghosts,
+            side_patch_box.lower(0),
+            side_patch_box.upper(0),
+            side_patch_box.lower(1),
+            side_patch_box.upper(1),
+    #if (NDIM == 3)
+            side_patch_box.lower(2),
+            side_patch_box.upper(2),
+    #endif
+            dx,
+            red_or_black);
+          }
+          else
+          {
+        GS_SMOOTH_FC(U,
+              U_ghosts,
+              alpha,
+              beta,
+              F,
+              F_ghosts,
+              side_patch_box.lower(0),
+              side_patch_box.upper(0),
+              side_patch_box.lower(1),
+              side_patch_box.upper(1),
+    #if (NDIM == 3)
+              side_patch_box.lower(2),
+              side_patch_box.upper(2),
+    #endif
+              dx);
+          }
+      }
+        }
+    }
+      } // constant C
+      else
+      {
+    const int beta_idx = d_poisson_spec.getCPatchDataId();
+    Pointer<SideData<NDIM, double> > beta_data = patch->getPatchData(beta_idx);
+    TBOX_ASSERT(beta_data->getGhostCellWidth() == d_gcw);
+    
+    for (int axis = 0; axis < NDIM; ++axis)
+    {
+        const Box<NDIM> side_patch_box = SideGeometry<NDIM>::toSideBox(patch_box, axis);
+        for (int depth = 0; depth < error_data->getDepth(); ++depth)
+        {
+      double* const U = error_data->getPointer(axis, depth);
+      const int U_ghosts = (error_data->getGhostCellWidth()).max();
+      const double* const F = residual_data->getPointer(axis, depth);
+      const int F_ghosts = (residual_data->getGhostCellWidth()).max();
+      const int* const mask = mask_data->getPointer(axis, depth);
+      const int mask_ghosts = (mask_data->getGhostCellWidth()).max();
+      const double* const BETA = beta_data->getPointer(axis, depth);
+      const int BETA_ghosts = (beta_data->getGhostCellWidth()).max();
+      if (patch_has_dirichlet_bdry && d_bc_helper->patchTouchesDirichletBoundaryAxis(patch, axis))
+      {
+          if (red_black_ordering)
+          {
+        int red_or_black = isweep % 2; // "red" = 0, "black" = 1
+        RB_GS_SMOOTH_VAR_C_MASK_FC(U,
+                 U_ghosts,
+                 alpha,
+                 BETA,
+                 BETA_ghosts,
+                 F,
+                 F_ghosts,
+                 mask,
+                 mask_ghosts,
+                 side_patch_box.lower(0),
+                 side_patch_box.upper(0),
+                 side_patch_box.lower(1),
+                 side_patch_box.upper(1),
+    #if (NDIM == 3)
+                 side_patch_box.lower(2),
+                 side_patch_box.upper(2),
+    #endif
+                       dx,
+                 red_or_black);
+          }
+          else
+          {
+        GS_SMOOTH_VAR_C_MASK_FC(U,
+              U_ghosts,
+              alpha,
+              BETA,
+              BETA_ghosts,
+              F,
+              F_ghosts,
+              mask,
+              mask_ghosts,
+              side_patch_box.lower(0),
+              side_patch_box.upper(0),
+              side_patch_box.lower(1),
+              side_patch_box.upper(1),
+    #if (NDIM == 3)
+              side_patch_box.lower(2),
+              side_patch_box.upper(2),
+    #endif
+              dx);
+          }
+      }
+      else
+      {
+          if (red_black_ordering)
+          {
+        int red_or_black = isweep % 2; // "red" = 0, "black" = 1
+        RB_GS_SMOOTH_VAR_C_FC(U,
+                  U_ghosts,
+                  alpha,
+                  BETA,
+                  BETA_ghosts,
+                  F,
+                  F_ghosts,
+                  side_patch_box.lower(0),
+                  side_patch_box.upper(0),
+                  side_patch_box.lower(1),
+                  side_patch_box.upper(1),
+    #if (NDIM == 3)
+                  side_patch_box.lower(2),
+                  side_patch_box.upper(2),
+    #endif
+                  dx,
+                  red_or_black);
+          }
+          else
+          {
+        GS_SMOOTH_VAR_C_FC(U,
+               U_ghosts,
+               alpha,
+               BETA,
+               BETA_ghosts,
+               F,
+               F_ghosts,
+               side_patch_box.lower(0),
+               side_patch_box.upper(0),
+               side_patch_box.lower(1),
+               side_patch_box.upper(1),
+    #if (NDIM == 3)
+               side_patch_box.lower(2),
+               side_patch_box.upper(2),
+    #endif
+               dx);
+          }
+      }
+        }
+    }
+      } // variable C
         }
     }
 

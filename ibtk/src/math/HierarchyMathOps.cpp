@@ -2351,6 +2351,7 @@ HierarchyMathOps::laplace(const int dst_idx,
 
     const int alpha_idx = (poisson_spec.dIsConstant()) ? -1 : poisson_spec.getDPatchDataId();
     const int beta_idx = (poisson_spec.cIsConstant() || poisson_spec.cIsZero()) ? -1 : poisson_spec.getCPatchDataId();
+    Pointer<SideVariable<NDIM, double> > beta_var;
 
     if (alpha_idx != -1)
     {
@@ -2360,13 +2361,24 @@ HierarchyMathOps::laplace(const int dst_idx,
                    << std::endl);
     }
 
-    if (beta_idx != -1)
+    if (!(poisson_spec.cIsConstant() || poisson_spec.cIsZero()))
     {
-        TBOX_ERROR("HierarchyMathOps::laplace():\n"
-                   << "  side-centered Laplacian requires spatially constant scalar-valued "
-                      "damping factor"
-                   << std::endl);
+        VariableDatabase<NDIM>* var_db = VariableDatabase<NDIM>::getDatabase();
+        Pointer<Variable<NDIM> > dummy_var;
+        var_db->mapIndexToVariable(beta_idx, dummy_var);
+        beta_var = dummy_var;
+#if !defined(NDEBUG)
+        TBOX_ASSERT(beta_var);
+#endif
     }
+
+    // if (beta_idx != -1)
+    // {
+    //     TBOX_ERROR("HierarchyMathOps::laplace():\n"
+    //                << "  side-centered Laplacian requires spatially constant scalar-valued "
+    //                   "damping factor"
+    //                << std::endl);
+    // }
 
     if (!src1_var->fineBoundaryRepresentsVariable())
     {
@@ -2410,6 +2422,20 @@ HierarchyMathOps::laplace(const int dst_idx,
 
             d_patch_math_ops.laplace(dst_data, alpha, beta, src1_data, gamma, src2_data, patch);
         }
+    }
+
+    // Take care of the case where beta is spatially varying
+    if (beta_idx != -1)
+    {
+        pointwiseMultiply(dst_idx,
+        dst_var,
+        beta_idx,
+        beta_var,
+        src1_idx,
+        src1_var,
+        1.0,
+        dst_idx,
+        dst_var);
     }
 
     // Allocate temporary data.
