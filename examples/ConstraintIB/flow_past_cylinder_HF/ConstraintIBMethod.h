@@ -30,8 +30,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef included_IBAMR_ConstraintIBMethod
-#define included_IBAMR_ConstraintIBMethod
+#ifndef included_ConstraintIBMethod
+#define included_ConstraintIBMethod
 
 /////////////////////////////// INCLUDES /////////////////////////////////////
 
@@ -182,46 +182,20 @@ public:
     /*!
      * \brief Get the total volume for all the Lagrangian structures
      */
-    inline const std::vector<double>& getStructureVolume()
+    inline const std::vector<double>& getVolumeStructure()
     {
-        return d_structure_vol;
+	return d_vol_structure;
     }
     
     /*!
      * \brief Get the total linear momentum for all the Lagrangian structures
      */
-    inline const std::vector<std::vector<double> >& getStructureMomentum()
+    inline const std::vector<std::vector<double> >& getLinearMomentumStructure()
     {
-        if (!d_calculate_structure_linear_mom)
-        {
-            TBOX_ERROR("ConstraintIBMethod::getStructureMomentum() called with calculate_structure_linear_mom = FALSE");
-        }
-        return d_structure_mom;
+	return d_linear_mom_structure;
     }
-
-    /*!
-     * \brief Get the total rotational momentum for all the Lagrangian structures with respect to their COM
-     */
-    inline const std::vector<std::vector<double> >& getStructureRotationalMomentum()
-    {
-        if (!d_calculate_structure_rotational_mom)
-        {
-            TBOX_ERROR(
-                "ConstraintIBMethod::getStructureRotationalMomentum() called with calculate_structure_rotational_mom = "
-                "FALSE");
-        }
-        return d_structure_rotational_mom;
-    }
-
-    /*!
-     * \brief Get the center of mass for all Lagrangian structures
-     */
-
-    inline const std::vector<std::vector<double> >& getStructureCOM()
-    {
-        return d_center_of_mass_current;
-    }
-
+    
+    
 private:
     /*!
      * \brief Default constructor.
@@ -380,12 +354,7 @@ private:
     /*!
      * \brief Calculate total translational momentum of all Lagrangian structures
      */
-    void calculateStructureMomentum();
-
-    /*!
-     * \brief Calculate the total rotational momentum of all Lagrangian structures with respect to their COM
-     */
-    void calculateStructureRotationalMomentum();
+    void calculateLinearMomentumStructure();
 
     /*!
      * No of immersed structures.
@@ -410,17 +379,12 @@ private:
     /*!
      * Volume associated with each immersed structure
      */
-    std::vector<double> d_structure_vol;
-
+    std::vector<double> d_vol_structure;
+    
     /*!
      * Linear momentum associated with each immersed structure
      */
-    std::vector<std::vector<double> > d_structure_mom;
-
-    /*!
-     * Rotational momentum associated with each immersed structure with respect to their COM
-     */
-    std::vector<std::vector<double> > d_structure_rotational_mom;
+    std::vector<std::vector<double> > d_linear_mom_structure;
 
     /*!
      * If divergence free projection is needed after FuRMoRP algorithm?
@@ -476,11 +440,6 @@ private:
      * Density and viscosity of the fluid.
      */
     double d_rho_fluid, d_mu_fluid;
-
-    /*!
-     * Bools for computing linear and rotational momentums of the body
-     */
-    bool d_calculate_structure_linear_mom, d_calculate_structure_rotational_mom;
 
     /*!
      * Iteration_counter for printing stuff.
@@ -559,4 +518,4 @@ private:
 
 /////////////////////////////////////////////////////////////////////////
 
-#endif //#ifndef included_IBAMR_ConstraintIBMethod
+#endif //#ifndef included_ConstraintIBMethod
