@@ -567,6 +567,10 @@ VCINSStaggeredHierarchyIntegrator::VCINSStaggeredHierarchyIntegrator(const std::
     d_indicator_var = new SideVariable<NDIM, double>(d_object_name + "::indicator");
     d_F_div_var = new SideVariable<NDIM, double>(d_object_name + "::F_div");
     d_EE_var = new CellVariable<NDIM, double>(d_object_name + "::EE", NDIM * NDIM);
+
+    // Initialize the helper variables
+    d_rho_cc_depth_var = new CellVariable<NDIM, double>(d_object_name + "::rho_cc_depth", NDIM);
+    d_rho_sc_var = new SideVariable<NDIM, double>(d_object_name + "::rho_sc");
     return;
 } // VCINSStaggeredHierarchyIntegrator
 
@@ -862,7 +866,7 @@ VCINSStaggeredHierarchyIntegrator::initializeHierarchyIntegrator(Pointer<PatchHi
     if (INSHierarchyIntegrator::d_rho_var && !d_rho_var)
     {
         TBOX_ERROR("VCINSStaggeredHierarchyIntegrator::initializeHierarchyIntegrator():\n"
-                   << "  mass density variable must be side-centered.\n");
+                   << "  mass density variable must be cell-centered.\n");
     }
     if (d_rho_var)
     {
@@ -870,10 +874,14 @@ VCINSStaggeredHierarchyIntegrator::initializeHierarchyIntegrator(Pointer<PatchHi
                          d_rho_new_idx,
                          d_rho_scratch_idx,
                          d_rho_var,
-                         side_ghosts,
+                         cell_ghosts,
                          "CONSERVATIVE_COARSEN",
                          "CONSERVATIVE_LINEAR_REFINE",
                          d_rho_fcn);
+
+        // Register helper variables
+        registerVariable(d_rho_cc_depth_idx, d_rho_cc_depth_var, cell_ghosts, getCurrentContext());
+        registerVariable(d_scaled_rho_sc_idx, d_rho_sc_var, side_ghosts, getCurrentContext());
     }
     else
     {
@@ -977,7 +985,7 @@ VCINSStaggeredHierarchyIntegrator::initializeHierarchyIntegrator(Pointer<PatchHi
         if (d_output_rho)
         {
             TBOX_ASSERT(d_rho_fcn);
-            d_visit_writer->registerPlotQuantity("rho", "SCALAR", d_rho_cc_idx, 0, d_rho_scale);
+            d_visit_writer->registerPlotQuantity("rho", "SCALAR", d_rho_current_idx, 0, d_rho_scale);
         }
 
         if (d_output_EE)
@@ -1035,7 +1043,7 @@ VCINSStaggeredHierarchyIntegrator::initializeHierarchyIntegrator(Pointer<PatchHi
 
 void
 VCINSStaggeredHierarchyIntegrator::initializePatchHierarchy(Pointer<PatchHierarchy<NDIM> > hierarchy,
-                                                          Pointer<GriddingAlgorithm<NDIM> > gridding_alg)
+                                                            Pointer<GriddingAlgorithm<NDIM> > gridding_alg)
 {
     HierarchyIntegrator::initializePatchHierarchy(hierarchy, gridding_alg);
 
@@ -1064,8 +1072,8 @@ VCINSStaggeredHierarchyIntegrator::initializePatchHierarchy(Pointer<PatchHierarc
 
 void
 VCINSStaggeredHierarchyIntegrator::preprocessIntegrateHierarchy(const double current_time,
-                                                              const double new_time,
-                                                              const int num_cycles)
+                                                                const double new_time,
+                                                                const int num_cycles)
 {
     INSHierarchyIntegrator::preprocessIntegrateHierarchy(current_time, new_time, num_cycles);
 
@@ -1197,6 +1205,21 @@ VCINSStaggeredHierarchyIntegrator::preprocessIntegrateHierarchy(const double cur
         }
     }
 
+    // Compute variable mass density.
+    if (d_rho_var)
+    {
+        if (d_rho_fcn)
+        {
+            d_rho_fcn->setDataOnPatchHierarchy(d_rho_current_idx, d_rho_var, d_hierarchy, current_time);
+            d_rho_fcn->setDataOnPatchHierarchy(d_rho_new_idx, d_rho_var, d_hierarchy, new_time);
+        }
+        else
+        {
+            d_hier_cc_data_ops->copyData(d_rho_new_idx, d_rho_current_idx);
+        }
+        d_hier_cc_data_ops->linearSum(d_rho_scratch_idx, 0.5, d_rho_current_idx, 0.5, d_rho_new_idx);
+    }
+
     // Account for the convective acceleration term.
     TimeSteppingType convective_time_stepping_type = d_convective_time_stepping_type;
     if (getIntegratorStep() == 0 && is_multistep_time_stepping_type(d_convective_time_stepping_type))
@@ -1226,33 +1249,42 @@ VCINSStaggeredHierarchyIntegrator::preprocessIntegrateHierarchy(const double cur
         d_hier_sc_data_ops->copyData(d_N_old_new_idx, N_idx);
         if (convective_time_stepping_type == FORWARD_EULER)
         {
-            d_hier_sc_data_ops->axpy(d_rhs_vec->getComponentDescriptorIndex(0),
-                                     -1.0 * rho,
-                                     N_idx,
-                                     d_rhs_vec->getComponentDescriptorIndex(0));
+            // Interpolate/scale rho onto sides and multiply to nonlinear term
+            interpolateMassDensity(d_rho_current_idx, current_time, -1.0);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
+
+            // d_hier_sc_data_ops->axpy(d_rhs_vec->getComponentDescriptorIndex(0),
+            //                          -1.0*rho,
+            //                          N_idx,
+            //                          d_rhs_vec->getComponentDescriptorIndex(0));
         }
         else if (convective_time_stepping_type == TRAPEZOIDAL_RULE)
         {
-            d_hier_sc_data_ops->axpy(d_rhs_vec->getComponentDescriptorIndex(0),
-                                     -0.5 * rho,
-                                     N_idx,
-                                     d_rhs_vec->getComponentDescriptorIndex(0));
-        }
-    }
+            // Interpolate/scale rho onto sides and multiply to nonlinear term
+            interpolateMassDensity(d_rho_current_idx, current_time, -0.5);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
 
-    // Compute variable mass density.
-    if (d_rho_var)
-    {
-        if (d_rho_fcn)
-        {
-            d_rho_fcn->setDataOnPatchHierarchy(d_rho_current_idx, d_rho_var, d_hierarchy, current_time);
-            d_rho_fcn->setDataOnPatchHierarchy(d_rho_new_idx, d_rho_var, d_hierarchy, new_time);
+            // d_hier_sc_data_ops->axpy(d_rhs_vec->getComponentDescriptorIndex(0),
+            //                          -0.5*rho,
+            //                          N_idx,
+            //                          d_rhs_vec->getComponentDescriptorIndex(0));
         }
-        else
-        {
-            d_hier_sc_data_ops->copyData(d_rho_new_idx, d_rho_current_idx);
-        }
-        d_hier_sc_data_ops->linearSum(d_rho_scratch_idx, 0.5, d_rho_current_idx, 0.5, d_rho_new_idx);
     }
 
     // Execute any registered callbacks.
@@ -1262,8 +1294,8 @@ VCINSStaggeredHierarchyIntegrator::preprocessIntegrateHierarchy(const double cur
 
 void
 VCINSStaggeredHierarchyIntegrator::integrateHierarchy(const double current_time,
-                                                    const double new_time,
-                                                    const int cycle_num)
+                                                      const double new_time,
+                                                      const int cycle_num)
 {
     INSHierarchyIntegrator::integrateHierarchy(current_time, new_time, cycle_num);
 
@@ -1348,9 +1380,9 @@ VCINSStaggeredHierarchyIntegrator::integrateHierarchy(const double current_time,
 
 void
 VCINSStaggeredHierarchyIntegrator::postprocessIntegrateHierarchy(const double current_time,
-                                                               const double new_time,
-                                                               const bool skip_synchronize_new_state_data,
-                                                               const int num_cycles)
+                                                                 const double new_time,
+                                                                 const bool skip_synchronize_new_state_data,
+                                                                 const int num_cycles)
 {
     INSHierarchyIntegrator::postprocessIntegrateHierarchy(
         current_time, new_time, skip_synchronize_new_state_data, num_cycles);
@@ -1508,10 +1540,10 @@ VCINSStaggeredHierarchyIntegrator::regridHierarchy()
 
 void
 VCINSStaggeredHierarchyIntegrator::setupSolverVectors(const Pointer<SAMRAIVectorReal<NDIM, double> >& sol_vec,
-                                                    const Pointer<SAMRAIVectorReal<NDIM, double> >& rhs_vec,
-                                                    const double current_time,
-                                                    const double new_time,
-                                                    const int cycle_num)
+                                                      const Pointer<SAMRAIVectorReal<NDIM, double> >& rhs_vec,
+                                                      const double current_time,
+                                                      const double new_time,
+                                                      const int cycle_num)
 {
     const int coarsest_ln = 0;
     const int finest_ln = d_hierarchy->getFinestLevelNumber();
@@ -1572,17 +1604,41 @@ VCINSStaggeredHierarchyIntegrator::setupSolverVectors(const Pointer<SAMRAIVector
             TBOX_ASSERT(cycle_num == 0);
 #endif
             const double omega = dt / d_dt_previous[0];
+
             d_hier_sc_data_ops->linearSum(N_idx, 1.0 + 0.5 * omega, N_idx, -0.5 * omega, d_N_old_current_idx);
         }
         if (convective_time_stepping_type == ADAMS_BASHFORTH || convective_time_stepping_type == MIDPOINT_RULE)
         {
-            d_hier_sc_data_ops->axpy(
-                rhs_vec->getComponentDescriptorIndex(0), -1.0 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
+            // Interpolate/scale rho onto sides and multiply to nonlinear term
+            interpolateMassDensity(d_rho_current_idx, new_time, -1.0);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
+            
+            // d_hier_sc_data_ops->axpy(
+            //     rhs_vec->getComponentDescriptorIndex(0), -1.0 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
         }
         else if (convective_time_stepping_type == TRAPEZOIDAL_RULE)
         {
-            d_hier_sc_data_ops->axpy(
-                rhs_vec->getComponentDescriptorIndex(0), -0.5 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
+            // Interpolate/scale rho onto sides and multiply to nonlinear term
+            interpolateMassDensity(d_rho_current_idx, new_time, -0.5);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
+            // d_hier_sc_data_ops->axpy(
+            //     rhs_vec->getComponentDescriptorIndex(0), -0.5 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
         }
     }
 
@@ -1656,10 +1712,10 @@ VCINSStaggeredHierarchyIntegrator::setupSolverVectors(const Pointer<SAMRAIVector
 
 void
 VCINSStaggeredHierarchyIntegrator::resetSolverVectors(const Pointer<SAMRAIVectorReal<NDIM, double> >& sol_vec,
-                                                    const Pointer<SAMRAIVectorReal<NDIM, double> >& rhs_vec,
-                                                    const double current_time,
-                                                    const double /*new_time*/,
-                                                    const int cycle_num)
+                                                      const Pointer<SAMRAIVectorReal<NDIM, double> >& rhs_vec,
+                                                      const double current_time,
+                                                      const double /*new_time*/,
+                                                      const int cycle_num)
 {
     // Synchronize solution data after solve.
     typedef SideDataSynchronization::SynchronizationTransactionComponent SynchronizationTransactionComponent;
@@ -1682,13 +1738,34 @@ VCINSStaggeredHierarchyIntegrator::resetSolverVectors(const Pointer<SAMRAIVector
         const int N_idx = d_N_vec->getComponentDescriptorIndex(0);
         if (convective_time_stepping_type == ADAMS_BASHFORTH || convective_time_stepping_type == MIDPOINT_RULE)
         {
-            d_hier_sc_data_ops->axpy(
-                rhs_vec->getComponentDescriptorIndex(0), +1.0 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
+            // Interpolate/scale rho onto sides and multiply to nonlinear term
+            interpolateMassDensity(d_rho_current_idx, current_time, 1.0);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
+            // d_hier_sc_data_ops->axpy(
+            //     rhs_vec->getComponentDescriptorIndex(0), +1.0 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
         }
         else if (convective_time_stepping_type == TRAPEZOIDAL_RULE)
         {
-            d_hier_sc_data_ops->axpy(
-                rhs_vec->getComponentDescriptorIndex(0), +0.5 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
+            interpolateMassDensity(d_rho_current_idx, current_time, 0.5);
+            d_hier_math_ops->pointwiseMultiply(d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0),
+                                               d_scaled_rho_sc_idx,
+                                               d_rho_sc_var,
+                                               N_idx,
+                                               d_N_vec->getComponentVariable(0),
+                                               1.0,
+                                               d_rhs_vec->getComponentDescriptorIndex(0),
+                                               d_rhs_vec->getComponentVariable(0));
+            // d_hier_sc_data_ops->axpy(
+            //     rhs_vec->getComponentDescriptorIndex(0), +0.5 * rho, N_idx, rhs_vec->getComponentDescriptorIndex(0));
         }
     }
     if (d_F_fcn)
@@ -1724,12 +1801,12 @@ VCINSStaggeredHierarchyIntegrator::removeNullSpace(const Pointer<SAMRAIVectorRea
 
 void
 VCINSStaggeredHierarchyIntegrator::initializeLevelDataSpecialized(const Pointer<BasePatchHierarchy<NDIM> > base_hierarchy,
-                                                                const int level_number,
-                                                                const double init_data_time,
-                                                                const bool /*can_be_refined*/,
-                                                                const bool initial_time,
-                                                                const Pointer<BasePatchLevel<NDIM> > base_old_level,
-                                                                const bool /*allocate_data*/)
+                                                                  const int level_number,
+                                                                  const double init_data_time,
+                                                                  const bool /*can_be_refined*/,
+                                                                  const bool initial_time,
+                                                                  const Pointer<BasePatchLevel<NDIM> > base_old_level,
+                                                                  const bool /*allocate_data*/)
 {
     const Pointer<PatchHierarchy<NDIM> > hierarchy = base_hierarchy;
     const Pointer<PatchLevel<NDIM> > old_level = base_old_level;
@@ -2100,11 +2177,11 @@ VCINSStaggeredHierarchyIntegrator::setupPlotDataSpecialized()
     }
 
     // Interpolate rho to cell centers (although this should be a cell centered variable anyway?)
-    if (d_output_rho)
-    {
-        d_hier_math_ops->interp(
-            d_rho_cc_idx, d_rho_cc_var, d_rho_current_idx, d_rho_var, d_no_fill_op, d_integrator_time, synch_cf_interface);
-    }
+    // if (d_output_rho)
+    // {
+    //     d_hier_math_ops->interp(
+    //         d_rho_cc_idx, d_rho_cc_var, d_rho_current_idx, d_rho_var, d_no_fill_op, d_integrator_time, synch_cf_interface);
+    // }
 
     // Compute EE = 0.5*(grad u + grad u^T).
     if (d_output_EE)
@@ -2774,6 +2851,59 @@ VCINSStaggeredHierarchyIntegrator::getConvectiveTimeSteppingType(const int cycle
     }
     return convective_time_stepping_type;
 } // getConvectiveTimeSteppingType
+
+void
+VCINSStaggeredHierarchyIntegrator::interpolateMassDensity(const int rho_idx, const double time, const double scale)
+{
+    // Copy density into scratch variable and fill ghost cells
+    // NN: need to replace NULL with correct BC
+    d_hier_cc_data_ops->copyData(d_rho_scratch_idx, rho_idx);
+    typedef HierarchyGhostCellInterpolation::InterpolationTransactionComponent InterpolationTransactionComponent;
+    InterpolationTransactionComponent ghost_fill_rho(d_rho_scratch_idx,
+                                                     DATA_REFINE_TYPE,
+                                                     USE_CF_INTERPOLATION,
+                                                     DATA_COARSEN_TYPE,
+                                                     d_bdry_extrap_type,
+                                                     CONSISTENT_TYPE_2_BDRY,
+                                                     NULL);
+     
+    Pointer<HierarchyGhostCellInterpolation> ghost_fill_op = new HierarchyGhostCellInterpolation();
+    ghost_fill_op->initializeOperatorState(ghost_fill_rho, d_hierarchy);
+    ghost_fill_op->fillData(time);
+
+    // Copy cell-centered density into a depth NDIM cell variable
+    const int coarsest_ln = 0;
+    const int finest_ln = d_hierarchy->getFinestLevelNumber();
+    for (int level_num = coarsest_ln; level_num <= finest_ln; ++level_num)
+    {
+        Pointer<PatchLevel<NDIM> > level  = d_hierarchy->getPatchLevel(level_num);
+        for (PatchLevel<NDIM>::Iterator p(level); p; p++)
+        {
+            Pointer<Patch<NDIM> > patch = level->getPatch(p());
+            Pointer<CellData<NDIM, double> > rho_depth_data = patch->getPatchData(d_rho_cc_depth_idx);
+            Pointer<CellData<NDIM, double> > rho_data = patch->getPatchData(d_rho_scratch_idx);
+
+            for (int d = 0; d < NDIM; ++d)
+            {
+                rho_depth_data->copyDepth(d, (*rho_data), 0);
+            }
+        }
+    }
+
+    // Interpolate onto sides
+    d_hier_math_ops->interp(d_scaled_rho_sc_idx,
+                            d_rho_sc_var,
+                            true, /*dst_synch_cf_bdry*/
+                            d_rho_cc_depth_idx,
+                            d_rho_cc_depth_var,
+                            d_no_fill_op,
+                            d_integrator_time);
+
+    // Scale rho by desired factor
+    if (scale != 1.0)
+        d_hier_sc_data_ops->scale(d_scaled_rho_sc_idx, scale, d_scaled_rho_sc_idx);
+
+} // interpolateMassDensity
 
 //////////////////////////////////////////////////////////////////////////////
 

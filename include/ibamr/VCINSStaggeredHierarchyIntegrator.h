@@ -317,6 +317,11 @@ private:
     void regridProjection();
 
     /*!
+     * Interpolate cell centered density to side centers
+     */
+    void interpolateMassDensity(const int rho_idx, const double time, const double scale = 1.0);
+
+    /*!
      * Determine the convective time stepping type for the current time step and
      * cycle number.
      */
@@ -377,8 +382,10 @@ private:
     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_indicator_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_F_div_var;
 
-    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_rho_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_depth_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_rho_sc_var;
 
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_EE_var;
 
@@ -394,6 +401,14 @@ private:
     int d_Q_current_idx, d_Q_new_idx, d_Q_scratch_idx;
     int d_N_old_current_idx, d_N_old_new_idx, d_N_old_scratch_idx;
     int d_rho_current_idx, d_rho_new_idx, d_rho_scratch_idx;
+
+    /*
+     * Patch data descriptor indices for helper or intermediate variables used
+     * by the integrator.
+     *
+     * These variable have one context
+     */
+    int d_rho_cc_depth_idx, d_scaled_rho_sc_idx;
 
     /*
      * Patch data descriptor indices for all "plot" variables managed by the
