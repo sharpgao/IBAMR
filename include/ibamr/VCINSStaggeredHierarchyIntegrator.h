@@ -88,7 +88,7 @@ namespace IBAMR
 {
 /*!
  * \brief Class VCINSStaggeredHierarchyIntegrator provides a staggered-grid solver
- * for the incompressible Navier-Stokes equations on an AMR grid hierarchy.
+ * for the incompressible Navier-Stokes equations on an AMR grid hierarchy with variable coefficients.
  */
 class VCINSStaggeredHierarchyIntegrator : public INSHierarchyIntegrator
 {
@@ -100,8 +100,8 @@ public:
      * when requested.
      */
     VCINSStaggeredHierarchyIntegrator(const std::string& object_name,
-                                    SAMRAI::tbox::Pointer<SAMRAI::tbox::Database> input_db,
-                                    bool register_for_restart = true);
+                                      SAMRAI::tbox::Pointer<SAMRAI::tbox::Database> input_db,
+                                      bool register_for_restart = true);
 
     /*!
      * The destructor for class VCINSStaggeredHierarchyIntegrator unregisters the
@@ -317,9 +317,16 @@ private:
     void regridProjection();
 
     /*!
-     * Interpolate cell centered density to side centers
+     * Interpolate a cell centered density variable onto side centers and store the patch data index
+     * Additional scaling or additive constant can be supplied, if necessary.
+     * Note that patch data for rho_cc_idx and scaled_rho_sc_idx should exist already.
      */
-    void interpolateMassDensity(const int rho_idx, const double time, const double scale = 1.0);
+    void interpolateMassDensity(const int rho_cc_idx,
+                                SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > scaled_rho_sc_var,
+                                const int scaled_rho_sc_idx,
+                                const double time,
+                                const double scale = 1.0,
+                                const double add = 0.0);
 
     /*!
      * Determine the convective time stepping type for the current time step and
@@ -385,7 +392,8 @@ private:
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_depth_var;
-    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_rho_sc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_scaled_rho_sc_rhs_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_scaled_rho_sc_coef_var;
 
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_EE_var;
 
@@ -408,7 +416,7 @@ private:
      *
      * These variable have one context
      */
-    int d_rho_cc_depth_idx, d_scaled_rho_sc_idx;
+    int d_rho_cc_depth_idx, d_scaled_rho_sc_rhs_idx, d_scaled_rho_sc_coef_idx;
 
     /*
      * Patch data descriptor indices for all "plot" variables managed by the
