@@ -329,6 +329,15 @@ private:
                                 const double add = 0.0);
 
     /*!
+     * Compute 1/rho on side centers, taking into account boundary conditions
+     */
+    void getInverseDensity(const int rho_cc_idx,
+                           SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > inv_rho_sc_var,
+                           const int inv_rho_sc_idx,
+                           const double time,
+                           const double scale = 1.0);
+
+    /*!
      * Determine the convective time stepping type for the current time step and
      * cycle number.
      */
@@ -392,8 +401,9 @@ private:
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_var;
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_rho_cc_depth_var;
-    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_scaled_rho_sc_rhs_var;
-    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_scaled_rho_sc_coef_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_C_rhs_sc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_C_coef_sc_var;
+    SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_D_coef_sc_var;
 
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_EE_var;
 
@@ -416,7 +426,7 @@ private:
      *
      * These variable have one context
      */
-    int d_rho_cc_depth_idx, d_scaled_rho_sc_rhs_idx, d_scaled_rho_sc_coef_idx;
+    int d_rho_cc_depth_idx, d_C_rhs_sc_idx, d_C_coef_sc_idx, d_D_coef_sc_idx;
 
     /*
      * Patch data descriptor indices for all "plot" variables managed by the

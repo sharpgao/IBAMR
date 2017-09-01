@@ -1,4 +1,3 @@
-//NN: Is this class required?
 // Filename: VCStaggeredStokesProjectionPreconditioner.h
 // Created on 31 Aug 2017 by Nishant Nangia
 //

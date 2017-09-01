@@ -1,4 +1,3 @@
-//NN: Is this class required?
 // Filename: VCStaggeredStokesProjectionPreconditioner.cpp
 // Created on 31 Aug 2017 by Nishant Nangia
 //
@@ -312,25 +311,39 @@ VCStaggeredStokesProjectionPreconditioner::solveSystem(SAMRAIVectorReal<NDIM, do
     //
     //    U = U^* - (1.0/rho) G Phi
     double coef;
+    int coef_idx;
     if (steady_state)
     {
         coef = -1.0;
+        d_hier_math_ops->grad(U_idx,
+                              U_sc_var,
+                              /*cf_bdry_synch*/ true,
+                              coef,
+                              d_Phi_scratch_idx,
+                              d_Phi_var,
+                              d_Phi_bdry_fill_op,
+                              d_pressure_solver->getSolutionTime(),
+                              1.0,
+                              U_idx,
+                              U_sc_var);
     }
     else
     {
-        coef = d_P_problem_coefs.getDConstant();
+
+        coef_idx = d_P_problem_coefs.getDPatchDataId();
+        d_hier_math_ops->grad(U_idx,
+                              U_sc_var,
+                              /*cf_bdry_synch*/ true,
+                              coef_idx,
+                              NULL, /*not used*/
+                              d_Phi_scratch_idx,
+                              d_Phi_var,
+                              d_Phi_bdry_fill_op,
+                              d_pressure_solver->getSolutionTime(),
+                              1.0,
+                              U_idx,
+                              U_sc_var);
     }
-    d_hier_math_ops->grad(U_idx,
-                          U_sc_var,
-                          /*cf_bdry_synch*/ true,
-                          coef,
-                          d_Phi_scratch_idx,
-                          d_Phi_var,
-                          d_Phi_bdry_fill_op,
-                          d_pressure_solver->getSolutionTime(),
-                          1.0,
-                          U_idx,
-                          U_sc_var);
 
     // Account for nullspace vectors.
     correctNullspace(U_vec, P_vec);
