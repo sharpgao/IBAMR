@@ -38,6 +38,7 @@
 #include "tbox/MathUtilities.h"
 #include "tbox/SAMRAI_MPI.h"
 #include "tbox/Utilities.h"
+#include "ibamr/RNG.h"
 
 /////////////////////////////// NAMESPACE ////////////////////////////////////
 
@@ -415,6 +416,82 @@ CIBStrategy::updateNewRigidBodyVelocity(const unsigned int part, Vec U)
     return;
 } // updateNewRigidBodyVelocity
 
+
+void
+CIBStrategy::computeRFDforcesAndDisplacements(Vec F_rfd, Vec U_rfd)
+{
+    double KbT = 1.0; // TODO Fix this so that the KbT = 0.0 case is handeled
+    // make d_KbT a variable read from input.
+    // if (input_db->keyExists("kT")) KbT = input_db->getDouble("kT");
+    double L_scale = 2.0;
+    int free_dofs_counter = 0;
+    std::vector<PetscInt> indices;
+    std::vector<PetscScalar> U_vec;
+    std::vector<PetscScalar> F_vec;
+    indices.reserve(d_num_rigid_parts * s_max_free_dofs);
+    U_vec.reserve(d_num_rigid_parts * s_max_free_dofs);
+    F_vec.reserve(d_num_rigid_parts * s_max_free_dofs);
+    for (unsigned int part = 0; part < d_num_rigid_parts; ++part)
+    {
+      int num_free_dofs;
+      const FRDV& solve_dofs = getSolveRigidBodyVelocity(part, num_free_dofs);
+      if (SAMRAI_MPI::getRank() == 0)
+      {
+	if (num_free_dofs)
+	{
+	  // Initialize external force and torque.
+	  RDV Fr;
+	  Eigen::Vector3d FU_rand, TW_rand, F_rand, T_rand, U_rand, W_rand;
+	  for (int d = 0; d < NDIM; ++d)
+	  {
+	    RNG::genrandn( &FU_rand(d) );
+	    RNG::genrandn( &TW_rand(d) );
+	  } 
+	  F_rand = ( KbT / L_scale ) * FU_rand;
+	  T_rand = ( KbT ) * TW_rand;
+	  eigenToRDV(F_rand, T_rand, Fr);
+	  
+	  
+	  U_rand = ( L_scale ) * FU_rand;
+	  W_rand = TW_rand;
+	  RDV Ur;
+          eigenToRDV(U_rand, W_rand, Ur);
+	  
+	  for (int k = 0; k < s_max_free_dofs; ++k)
+	  {
+	    if (solve_dofs[k])
+	    {
+	      U_vec.push_back(Ur[k]);
+	      F_vec.push_back(Fr[k]);
+	      indices.push_back(free_dofs_counter);
+	      ++free_dofs_counter;
+	    }
+	  }
+	  
+	}
+      }
+    }
+    pout << "Hopefully random looking: " << U_vec[0] << "\n";
+    // Create PETSc Vecs for free DOFs.
+    const int n = free_dofs_counter;
+    //const int N = SAMRAI_MPI::sumReduction(free_dofs_counter);
+    //VecCreateMPI(PETSC_COMM_WORLD, n, N, &U_rfd);
+    //VecCreateMPI(PETSC_COMM_WORLD, n, N, &F_rfd);
+
+    if (n)
+    {
+        VecSetValues(U_rfd, n, &indices[0], &U_vec[0], INSERT_VALUES);
+        VecSetValues(F_rfd, n, &indices[0], &F_vec[0], INSERT_VALUES);
+    }
+
+    VecAssemblyBegin(U_rfd);
+    VecAssemblyEnd(U_rfd);
+    VecAssemblyBegin(F_rfd);
+    VecAssemblyEnd(F_rfd);
+    
+    return;
+} // computeRFDforcesAndDisplacements (Brennan Sprinkle)
+
 void
 CIBStrategy::updateNewRigidBodyVelocity(Vec U,
                                         const bool only_free_dofs,
@@ -512,6 +589,63 @@ CIBStrategy::updateNewRigidBodyVelocity(Vec U,
 
     return;
 } // updateNewRigidBodyVelocity
+
+void
+CIBStrategy::updateRFDVelocity(Vec U)
+{
+    // Get rigid DOFs on all processors.
+    Vec U_all;
+    VecScatter ctx;
+    VecScatterCreateToAll(U, &ctx, &U_all);
+    VecScatterBegin(ctx, U, U_all, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(ctx, U, U_all, INSERT_VALUES, SCATTER_FORWARD);
+    const PetscScalar* U_array;
+    VecGetArrayRead(U_all, &U_array);
+
+    int part_free_dofs_begin = 0;
+    for (unsigned part = 0; part < d_num_rigid_parts; ++part)
+    {
+      int num_free_dofs;
+      const FreeRigidDOFVector& solve_dofs = getSolveRigidBodyVelocity(part, num_free_dofs);
+      if (!num_free_dofs) continue;
+
+      RDV UW;
+      eigenToRDV(d_trans_vel_new[part], d_rot_vel_new[part], UW);
+      const PetscScalar* a = &U_array[part_free_dofs_begin];
+      for (int k = 0, p = 0; k < s_max_free_dofs; ++k)
+      {
+	if (solve_dofs[k])
+        {
+	  UW[k] = a[p];
+	  ++p;
+	}
+      }
+      rdvToEigen(UW, d_trans_vel_half[part], d_rot_vel_half[part]);
+
+      part_free_dofs_begin += num_free_dofs;
+    }
+
+    VecRestoreArrayRead(U_all, &U_array);
+    VecScatterDestroy(&ctx);
+    VecDestroy(&U_all);
+
+    return;
+} // updateRFDVelocity (Brennan Sprinkle)
+
+
+void
+CIBStrategy::resetRFDVelocity()
+{
+    int part_free_dofs_begin = 0;
+    for (unsigned part = 0; part < d_num_rigid_parts; ++part)
+    {
+      d_trans_vel_half[part] = d_trans_vel_current[part];
+      d_rot_vel_half[part] = d_rot_vel_current[part];
+    }
+
+    return;
+} // resetRFDVelocity (Brennan Sprinkle)
+
 
 void
 CIBStrategy::copyVecToArray(Vec /*b*/,

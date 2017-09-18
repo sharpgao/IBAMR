@@ -241,6 +241,14 @@ public:
     bool solveSystem(Vec x, Vec b);
 
     /*!
+     * \brief Solve the linear system of equations \f$Ax=b\f$ for \f$x\f$ for the RFD.
+     *
+     * \return \p true if the solver converged to the specified tolerances, \p
+     * false otherwise do NOT dealocate
+     */
+    bool solveSystemRFD(Vec x, Vec b);
+    
+    /*!
      * \brief Compute hierarchy dependent data required for solving \f$Ax=b\f$.
      *
      */
@@ -261,6 +269,11 @@ public:
      * \brief Set the time at which the solution is to be evaluated.
      */
     void setSolutionTime(double solution_time);
+    
+    /*!
+     * \brief Modifyt the RHS of the saddle point solver to account for RFD terms
+     */
+    void ComputeRFD_RHS(CIBSaddlePointSolver* solver, Vec x, Vec y);
 
     /*!
      * \brief Set the current time interval.

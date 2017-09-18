@@ -289,19 +289,67 @@ CIBStaggeredStokesSolver::solveSystem(SAMRAIVectorReal<NDIM, double>& x, SAMRAIV
     Vec F;
     d_cib_strategy->getNetExternalForceTorque(&F, d_new_time);
 
+    // RFD set-up
+    Vec F_rfd, U_rfd;
+    VecDuplicate(F,&F_rfd);
+    VecDuplicate(U,&U_rfd);
+    
+    d_cib_strategy->computeRFDforcesAndDisplacements(F_rfd, U_rfd);
+    //pout << "Random FTs" << "\n";
+    //VecView(F_rfd,PETSC_VIEWER_STDOUT_WORLD);
+    //pout << "Random UWs" << "\n";
+    //VecView(U_rfd,PETSC_VIEWER_STDOUT_WORLD);
+    //pout << "\n";
+    
+    // Make zero sub-vectors for RFD
+    Vec g_rfd;
+    VecDuplicate(g_h,&g_rfd);
+    VecZeroEntries(g_rfd);
+    
+    Vec V_rfd;
+    VecDuplicate(L, &V_rfd);
+    VecZeroEntries(V_rfd);
+    
+    
     // Create multivector to pass it to the saddle point solver.
-    std::vector<Vec> vx(3), vb(3);
+    std::vector<Vec> vx(3), vb(3), v_RFD(3);
     vx[0] = u_p;
     vx[1] = L;
     vx[2] = U;
     vb[0] = g_h;
     vb[1] = V;
     vb[2] = F;
+    v_RFD[0] = g_rfd;
+    v_RFD[1] = V_rfd;
+    v_RFD[2] = F_rfd;
 
-    Vec mv_x, mv_b;
+    Vec mv_x, mv_b, mv_rfd;
     VecCreateNest(PETSC_COMM_WORLD, 3, NULL, &vx[0], &mv_x);
     VecCreateNest(PETSC_COMM_WORLD, 3, NULL, &vb[0], &mv_b);
-
+    VecCreateNest(PETSC_COMM_WORLD, 3, NULL, &v_RFD[0], &mv_rfd);
+    
+    // RFD solve and update
+    bool rfd_converged = d_sp_solver->solveSystemRFD(mv_x, mv_rfd);
+    d_cib_strategy->updateRFDVelocity(U_rfd);
+    
+    
+    
+    PetscReal norm;
+    VecNorm(V,NORM_2,&norm);
+    pout << "norm check before = " << norm << "\n";
+    
+    pout << "calling set RHS function" << "\n";
+    CIBSaddlePointSolver *solver = static_cast<CIBSaddlePointSolver*>(d_sp_solver);
+    d_sp_solver->ComputeRFD_RHS(solver, mv_b, mv_x);
+    
+    d_cib_strategy->resetRFDVelocity();
+    
+    VecNorm(V,NORM_2,&norm);
+    pout << "norm check after = " << norm << "\n";
+    
+    // End RFD stuff
+    
+    
     // Solve for velocity, pressure and Lagrange multipliers.
     // Notice that initial guess for U is provided by the implementation of the
     // IBAMR::CIBStrategy class. This is passed as an initial guess for the
@@ -317,6 +365,22 @@ CIBStaggeredStokesSolver::solveSystem(SAMRAIVectorReal<NDIM, double>& x, SAMRAIV
                                                /*only_free_dofs*/ true,
                                                /*only_imposed_dofs*/ false,
                                                /*all_dofs*/ false);
+    
+    
+    
+    // Turns out this is NOT IMPORTANT
+    //VecZeroEntries(L);
+    
+    
+    //VecView(U,PETSC_VIEWER_STDOUT_WORLD);
+    //VecView(F,PETSC_VIEWER_STDOUT_WORLD);
+    //PetscReal norm;
+    //VecNorm(V,NORM_2,&norm);
+    //pout << "V_norm = " << norm << "\n";
+    //VecNorm(g_h,NORM_2,&norm);
+    //pout << "g_norm = " << norm << "\n";
+    //VecNorm(F,NORM_2,&norm);
+    //pout << "F_norm = " << norm << "\n";
 
     double half_time = 0.5 * (d_new_time + d_current_time);
     pout << "\n"
@@ -357,10 +421,17 @@ CIBStaggeredStokesSolver::solveSystem(SAMRAIVectorReal<NDIM, double>& x, SAMRAIV
     // Delete PETSc vectors.
     PETScSAMRAIVectorReal::destroyPETScVector(u_p);
     PETScSAMRAIVectorReal::destroyPETScVector(g_h);
+    PETScSAMRAIVectorReal::destroyPETScVector(g_rfd);
     VecDestroy(&V);
+    VecDestroy(&V_rfd);
+    VecDestroy(&F_rfd);
+    VecDestroy(&U_rfd);
     VecDestroy(&mv_x);
     VecDestroy(&mv_b);
+    VecDestroy(&mv_rfd);
 
+    pout << "done with dat solve function \n";
+    
     return converged;
 
 } // solveSystem

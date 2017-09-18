@@ -645,6 +645,7 @@ INSStaggeredStochasticForcing::setDataOnPatchHierarchy(const int data_idx,
         std::vector<InterpolationTransactionComponent> ghost_fill_components(1);
         ghost_fill_components[0] =
             InterpolationTransactionComponent(d_W_cc_idx, "NONE", false, "NONE", "NONE", false, bc_coefs);
+	    //InterpolationTransactionComponent(d_W_cc_idx, "CONSERVATIVE_LINEAR_REFINE", false, "CONSERVATIVE_COARSEN", "NONE", false, bc_coefs);
         HierarchyGhostCellInterpolation ghost_fill_op;
         ghost_fill_op.initializeOperatorState(ghost_fill_components, hierarchy);
         ghost_fill_op.fillData(data_time);

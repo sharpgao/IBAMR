@@ -313,6 +313,16 @@ public:
      * solver for free-moving case.
      */
     void updateNewRigidBodyVelocity(const unsigned int part, const RigidDOFVector& U);
+    
+     /*!
+     * \brief Calculate any Forces and Displacements needed for the RFD.
+     */
+    void computeRFDforcesAndDisplacements(Vec F_rfd, Vec U_rfd);
+    
+    /*!
+     * \brief resets Displacements after the RFD.
+     */
+    void resetRFDVelocity();
 
     /*!
      * \brief Update the rigid body velocity obtained from the constraint Stokes
@@ -347,6 +357,14 @@ public:
      * \note The size of \em array is assummed to be sum of nodes
      * of all the structures given in \em struct_ids times the \em data_depth.
      */
+    
+     /*!
+     * \brief Update the rigid body velocity obtained from the constraint Stokes
+     * solver for RFD computations.
+     */
+    void updateRFDVelocity(Vec U);
+    
+    
     virtual void copyVecToArray(Vec b,
                                 double* array,
                                 const std::vector<unsigned>& struct_ids,

@@ -266,6 +266,13 @@ public:
      */
     void forwardEulerStep(double current_time, double new_time);
 
+    
+    /*!
+     * \brief Advance the positions of the Lagrangian structure for the RFD
+     * step.
+     */
+    void RFDStep(double delta);
+    
     /*!
      * \brief Advance the positions of the Lagrangian structure using the backward Euler
      * method.

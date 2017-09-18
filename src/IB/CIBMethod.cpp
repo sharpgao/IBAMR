@@ -633,6 +633,7 @@ CIBMethod::spreadForce(
 void
 CIBMethod::forwardEulerStep(double current_time, double new_time)
 {
+    pout << "entering FE function \n";
     const int coarsest_ln = 0;
     const int finest_ln = d_hierarchy->getFinestLevelNumber();
     const double dt = MathUtilities<double>::equalEps(d_rho, 0.0) ? 0.0 : (new_time - current_time);
@@ -736,23 +737,238 @@ CIBMethod::forwardEulerStep(double current_time, double new_time)
             }
         }
     }
-
+    pout << "leaving FE function \n";
     return;
 } // forwardEulerStep
 
 void
+CIBMethod::RFDStep(double delta)
+{
+    pout << "entering RFD step function \n";
+    const int coarsest_ln = 0;
+    const int finest_ln = d_hierarchy->getFinestLevelNumber();
+    const double dt = delta;
+
+    // Fill the rotation matrix of structures with rotation angle 0.5*(W^n)*dt.
+    std::vector<Eigen::Matrix3d> rotation_mat(d_num_rigid_parts, Eigen::Matrix3d::Identity(3, 3));
+    setRotationMatrix(d_rot_vel_half, d_quaternion_current, d_quaternion_half, rotation_mat, 0.5 * dt); // place to check
+
+    // Get the domain limits.
+    Pointer<CartesianGridGeometry<NDIM> > grid_geom = d_hierarchy->getGridGeometry();
+    const double* const domain_x_lower = grid_geom->getXLower();
+    const double* const domain_x_upper = grid_geom->getXUpper();
+    double domain_length[NDIM];
+    for (int d = 0; d < NDIM; ++d)
+    {
+        domain_length[d] = domain_x_upper[d] - domain_x_lower[d];
+    }
+    const IntVector<NDIM>& periodic_shift = grid_geom->getPeriodicShift();
+
+    // Rotate the body with current rotational velocity about origin
+    // and translate the body to predicted position X^n+1/2.
+    std::vector<Pointer<LData> >* X_half_data;
+    bool* X_half_needs_ghost_fill;
+    getPositionData(&X_half_data, &X_half_needs_ghost_fill, d_half_time);
+    for (int ln = coarsest_ln; ln <= finest_ln; ++ln)
+    {
+        if (!d_l_data_manager->levelContainsLagrangianData(ln)) continue;
+
+        boost::multi_array_ref<double, 2>& X_half_array = *((*X_half_data)[ln]->getLocalFormVecArray());
+        const boost::multi_array_ref<double, 2>& X0_array =
+            *(d_l_data_manager->getLData("X0_unshifted", ln)->getLocalFormVecArray());
+        const Pointer<LMesh> mesh = d_l_data_manager->getLMesh(ln);
+        const std::vector<LNode*>& local_nodes = mesh->getLocalNodes();
+
+        // Get structures on this level.
+        const std::vector<int> structIDs = d_l_data_manager->getLagrangianStructureIDs(ln);
+        const unsigned structs_on_this_ln = static_cast<unsigned>(structIDs.size());
+#if !defined(NDEBUG)
+        TBOX_ASSERT(structs_on_this_ln == d_num_rigid_parts);
+#endif
+        for (std::vector<LNode*>::const_iterator cit = local_nodes.begin(); cit != local_nodes.end(); ++cit)
+        {
+            const LNode* const node_idx = *cit;
+            const int lag_idx = node_idx->getLagrangianIndex();
+            const int local_idx = node_idx->getLocalPETScIndex();
+            double* const X_half = &X_half_array[local_idx][0];
+            const double* const X0 = &X0_array[local_idx][0];
+            Eigen::Vector3d dr = Eigen::Vector3d::Zero();
+            Eigen::Vector3d R_dr = Eigen::Vector3d::Zero();
+
+            int struct_handle = 0;
+            if (structs_on_this_ln > 1) struct_handle = getStructureHandle(lag_idx);
+
+            for (unsigned int d = 0; d < NDIM; ++d)
+            {
+                dr[d] = X0[d] - d_center_of_mass_initial[struct_handle][d];
+            }
+
+            // Rotate dr vector using the rotation matrix.
+            R_dr = rotation_mat[struct_handle] * dr;
+            for (unsigned int d = 0; d < NDIM; ++d)
+            {
+                X_half[d] = d_center_of_mass_current[struct_handle][d] + R_dr[d] +
+                            0.5 * dt * d_trans_vel_half[struct_handle][d];
+
+                if (periodic_shift[d])
+                {
+                    while (X_half[d] < domain_x_lower[d])
+                    {
+                        X_half[d] += domain_length[d];
+                    }
+                    while (X_half[d] >= domain_x_upper[d])
+                    {
+                        X_half[d] -= domain_length[d];
+                    }
+                }
+            }
+        }
+        (*X_half_data)[ln]->restoreArrays();
+        d_l_data_manager->getLData("X0_unshifted", ln)->restoreArrays();
+    }
+    *X_half_needs_ghost_fill = true;
+
+    // Compute the COM at mid-step.
+    for (unsigned struct_no = 0; struct_no < d_num_rigid_parts; ++struct_no)
+    {
+        for (unsigned int d = 0; d < NDIM; ++d)
+        {
+            d_center_of_mass_half[struct_no][d] =
+                d_center_of_mass_current[struct_no][d] + 0.5 * dt * d_trans_vel_half[struct_no][d];
+            if (periodic_shift[d])
+            {
+                while (d_center_of_mass_half[struct_no][d] < domain_x_lower[d])
+                {
+                    d_center_of_mass_half[struct_no][d] += domain_length[d];
+                }
+                while (d_center_of_mass_half[struct_no][d] >= domain_x_upper[d])
+                {
+                    d_center_of_mass_half[struct_no][d] -= domain_length[d];
+                }
+            }
+        }
+    }
+    pout << "leaving RFD Step function \n";
+    return;
+} // RFDStep (Brennan Sprinkle)
+
+// RFDStep HACK HACK HACK HACK HACK (Brennan Sprinkle)
+void
 CIBMethod::backwardEulerStep(double current_time, double new_time)
 {
-    TBOX_ERROR(
-        "CIBMethod::backwardEulerStep() not implemented. The time integrator uses mid-point timestepping with "
-        "CIBMethod::forwardEulerStep() as predictor. \n");
-    return;
+    double delta = new_time - current_time;
+    pout << "entering RFD step function \n";
+    const int coarsest_ln = 0;
+    const int finest_ln = d_hierarchy->getFinestLevelNumber();
+    const double dt = delta;
 
-} // backwardEulerStep
+    // Fill the rotation matrix of structures with rotation angle 0.5*(W^n)*dt.
+    std::vector<Eigen::Matrix3d> rotation_mat(d_num_rigid_parts, Eigen::Matrix3d::Identity(3, 3));
+    setRotationMatrix(d_rot_vel_half, d_quaternion_current, d_quaternion_half, rotation_mat, 0.5 * dt); // place to check
+
+    // Get the domain limits.
+    Pointer<CartesianGridGeometry<NDIM> > grid_geom = d_hierarchy->getGridGeometry();
+    const double* const domain_x_lower = grid_geom->getXLower();
+    const double* const domain_x_upper = grid_geom->getXUpper();
+    double domain_length[NDIM];
+    for (int d = 0; d < NDIM; ++d)
+    {
+        domain_length[d] = domain_x_upper[d] - domain_x_lower[d];
+    }
+    const IntVector<NDIM>& periodic_shift = grid_geom->getPeriodicShift();
+
+    // Rotate the body with current rotational velocity about origin
+    // and translate the body to predicted position X^n+1/2.
+    std::vector<Pointer<LData> >* X_half_data;
+    bool* X_half_needs_ghost_fill;
+    getPositionData(&X_half_data, &X_half_needs_ghost_fill, d_half_time);
+    for (int ln = coarsest_ln; ln <= finest_ln; ++ln)
+    {
+        if (!d_l_data_manager->levelContainsLagrangianData(ln)) continue;
+
+        boost::multi_array_ref<double, 2>& X_half_array = *((*X_half_data)[ln]->getLocalFormVecArray());
+        const boost::multi_array_ref<double, 2>& X0_array =
+            *(d_l_data_manager->getLData("X0_unshifted", ln)->getLocalFormVecArray());
+        const Pointer<LMesh> mesh = d_l_data_manager->getLMesh(ln);
+        const std::vector<LNode*>& local_nodes = mesh->getLocalNodes();
+
+        // Get structures on this level.
+        const std::vector<int> structIDs = d_l_data_manager->getLagrangianStructureIDs(ln);
+        const unsigned structs_on_this_ln = static_cast<unsigned>(structIDs.size());
+#if !defined(NDEBUG)
+        TBOX_ASSERT(structs_on_this_ln == d_num_rigid_parts);
+#endif
+        for (std::vector<LNode*>::const_iterator cit = local_nodes.begin(); cit != local_nodes.end(); ++cit)
+        {
+            const LNode* const node_idx = *cit;
+            const int lag_idx = node_idx->getLagrangianIndex();
+            const int local_idx = node_idx->getLocalPETScIndex();
+            double* const X_half = &X_half_array[local_idx][0];
+            const double* const X0 = &X0_array[local_idx][0];
+            Eigen::Vector3d dr = Eigen::Vector3d::Zero();
+            Eigen::Vector3d R_dr = Eigen::Vector3d::Zero();
+
+            int struct_handle = 0;
+            if (structs_on_this_ln > 1) struct_handle = getStructureHandle(lag_idx);
+
+            for (unsigned int d = 0; d < NDIM; ++d)
+            {
+                dr[d] = X0[d] - d_center_of_mass_initial[struct_handle][d];
+            }
+
+            // Rotate dr vector using the rotation matrix.
+            R_dr = rotation_mat[struct_handle] * dr;
+            for (unsigned int d = 0; d < NDIM; ++d)
+            {
+                X_half[d] = d_center_of_mass_current[struct_handle][d] + R_dr[d] +
+                            0.5 * dt * d_trans_vel_half[struct_handle][d];
+
+                if (periodic_shift[d])
+                {
+                    while (X_half[d] < domain_x_lower[d])
+                    {
+                        X_half[d] += domain_length[d];
+                    }
+                    while (X_half[d] >= domain_x_upper[d])
+                    {
+                        X_half[d] -= domain_length[d];
+                    }
+                }
+            }
+        }
+        (*X_half_data)[ln]->restoreArrays();
+        d_l_data_manager->getLData("X0_unshifted", ln)->restoreArrays();
+    }
+    *X_half_needs_ghost_fill = true;
+
+    // Compute the COM at mid-step.
+    for (unsigned struct_no = 0; struct_no < d_num_rigid_parts; ++struct_no)
+    {
+        for (unsigned int d = 0; d < NDIM; ++d)
+        {
+            d_center_of_mass_half[struct_no][d] =
+                d_center_of_mass_current[struct_no][d] + 0.5 * dt * d_trans_vel_half[struct_no][d];
+            if (periodic_shift[d])
+            {
+                while (d_center_of_mass_half[struct_no][d] < domain_x_lower[d])
+                {
+                    d_center_of_mass_half[struct_no][d] += domain_length[d];
+                }
+                while (d_center_of_mass_half[struct_no][d] >= domain_x_upper[d])
+                {
+                    d_center_of_mass_half[struct_no][d] -= domain_length[d];
+                }
+            }
+        }
+    }
+    pout << "leaving RFD Step function \n";
+    return;
+} // RFDStep HACK (Brennan Sprinkle)
 
 void
 CIBMethod::midpointStep(double current_time, double new_time)
 {
+    pout << "entering midpoint function \n";
     const double dt = new_time - current_time;
     int flag_regrid = 0;
     const bool is_steady_stokes = MathUtilities<double>::equalEps(d_rho, 0.0);
@@ -819,7 +1035,7 @@ CIBMethod::midpointStep(double current_time, double new_time)
                 X_new[d] =
                     d_center_of_mass_current[struct_handle][d] + R_dr[d] +
                     dt * (is_steady_stokes ? d_trans_vel_new[struct_handle][d] : d_trans_vel_half[struct_handle][d]);
-
+		//pout << "absolute posisition is: " << X_new[d] << "\n";
                 if (periodic_shift[d])
                 {
                     while (X_new[d] < domain_x_lower[d])
@@ -871,7 +1087,7 @@ CIBMethod::midpointStep(double current_time, double new_time)
     {
         d_time_integrator_needs_regrid = true;
     }
-
+    pout << "leaving midpoint function \n";
     return;
 } // midpointStep
 

@@ -1,0 +1,6 @@
+RESOLVE: SOURCE=/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/Toy_IBAMR/IBAMR/include BUILD=
+/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/Eigen/3.2.4/include
+/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/PETSc/3.7.2/include
+/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/SAMRAI/2.4.4-OpenMPI-1.8.4/include
+/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/Toy_IBAMR/IBAMR/ibtk/include
+/home/bsprinkle/SOFTWARES/LIBRARIESIBAMR/Toy_IBAMR/IBAMR/include

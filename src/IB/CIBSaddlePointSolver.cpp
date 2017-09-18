@@ -33,6 +33,7 @@
 /////////////////////////////// INCLUDES /////////////////////////////////////
 
 #include <limits>
+#include <boost/iterator/iterator_concepts.hpp>
 
 #include "ibamr/CIBMobilitySolver.h"
 #include "ibamr/CIBSaddlePointSolver.h"
@@ -467,6 +468,51 @@ CIBSaddlePointSolver::solveSystem(Vec x, Vec b)
     IBTK_TIMER_STOP(t_solve_system);
     return converged;
 } // solveSystem
+
+
+bool
+CIBSaddlePointSolver::solveSystemRFD(Vec x, Vec b)
+{
+    IBTK_TIMER_START(t_solve_system);
+
+    // Initialize the solver, when necessary.
+    //if (!d_is_initialized) initializeSolverState(x, b);
+    initializeSolverState(x, b);
+
+    d_petsc_x = x;
+    VecCopy(b, d_petsc_b);
+
+    // Modify RHS for inhomogeneous Bcs.
+    d_A->setHomogeneousBc(false);
+    d_A->modifyRhsForBcs(d_petsc_b);
+    d_A->setHomogeneousBc(true);
+
+    // Solve the system.
+    KSPSolve(d_petsc_ksp, d_petsc_b, d_petsc_x);
+    KSPGetIterationNumber(d_petsc_ksp, &d_current_iterations);
+    KSPGetResidualNorm(d_petsc_ksp, &d_current_residual_norm);
+
+    // Impose Solution Bcs.
+    d_A->setHomogeneousBc(false);
+    d_A->imposeSolBcs(d_petsc_x);
+
+    // Determine the convergence reason.
+    KSPConvergedReason reason;
+    KSPGetConvergedReason(d_petsc_ksp, &reason);
+    const bool converged = (static_cast<int>(reason) > 0);
+    if (d_enable_logging) reportKSPConvergedReason(reason, plog);
+
+    // Invalidate d_petsc_x Vec.
+    // d_petsc_x = NULL;
+
+    // Deallocate the solver, when necessary.
+    // if (deallocate_after_solve) deallocateSolverState();
+    deallocateSolverState();
+
+    IBTK_TIMER_STOP(t_solve_system);
+    return converged;
+} // solveSystemRFD (Brennan Sprinkle)
+
 
 void
 CIBSaddlePointSolver::initializeSolverState(Vec x, Vec b)
@@ -1109,6 +1155,210 @@ CIBSaddlePointSolver::PCApply_SaddlePoint(PC pc, Vec x, Vec y)
     PetscFunctionReturn(0);
 
 } // PCApply_SaddlePoint
+
+
+// Modify the RHS to account for the RFD
+void
+CIBSaddlePointSolver::ComputeRFD_RHS(CIBSaddlePointSolver* solver, Vec b, Vec y)
+{
+    //pout << "RFD RHS" << "\n";
+    //pout << solver->d_current_time << "\n";
+    Pointer<IBStrategy> ib_method_ops = solver->d_cib_strategy;
+
+    
+#if !defined(NDEBUG)
+    TBOX_ASSERT(solver);
+    TBOX_ASSERT(solver->d_LInv);
+    TBOX_ASSERT(solver->d_mob_solver);
+    TBOX_ASSERT(ib_method_ops);
+#endif
+
+    // Get some constants
+    static const double gamma = solver->d_scale_spread;
+    static const double beta = solver->d_scale_interp;
+    const double half_time = 0.5 * (solver->d_new_time + solver->d_current_time);
+    
+    int total_comps, free_comps = 0;
+    Vec *vb, *vy;
+    VecNestGetSubVecs(b, NULL, &vb);
+    VecNestGetSubVecs(y, &total_comps, &vy);
+    VecGetSize(vb[2], &free_comps);
+    
+    Pointer<SAMRAIVectorReal<NDIM, double> > vb0, vy0;
+    IBTK::PETScSAMRAIVectorReal::getSAMRAIVectorRead(vb[0], &vb0);
+    IBTK::PETScSAMRAIVectorReal::getSAMRAIVector(vy[0], &vy0);
+    
+
+    // Get the individual components. // TODO maybe this sets the real g_h to zero
+    Pointer<SAMRAIVectorReal<NDIM, double> > g_h = vb0->cloneVector("");
+    g_h->allocateVectorData();
+    g_h->copyVector(vb0);
+    g_h->setToScalar(0.0,false); // added so we can use g_h for speading. Hopefully does not effect valure of vb 
+    
+    const int g_data_idx = g_h->getComponentDescriptorIndex(0);
+    
+    
+    
+    Pointer<SAMRAIVectorReal<NDIM, double> > u_p = vy0;
+    
+    // Fill ghost cells of u TODO MIGHT NEED INTERP TRANS STUFF??????
+    int u_data_idx = u_p->getComponentDescriptorIndex(0);
+    typedef IBTK::HierarchyGhostCellInterpolation::InterpolationTransactionComponent InterpolationTransactionComponent;
+    std::vector<InterpolationTransactionComponent> transaction_comps;
+    InterpolationTransactionComponent u_component(u_data_idx,
+                                                  DATA_REFINE_TYPE,
+                                                  USE_CF_INTERPOLATION,
+                                                  DATA_COARSEN_TYPE,
+                                                  BDRY_EXTRAP_TYPE,
+                                                  CONSISTENT_TYPE_2_BDRY,
+                                                  solver->d_u_bc_coefs,
+                                                  solver->d_fill_pattern);
+    transaction_comps.push_back(u_component);
+    //solver->d_hier_bdry_fill->initializeOperatorState(transaction_comps, u_p->getPatchHierarchy());
+    Pointer<HierarchyGhostCellInterpolation> hier_bdry_fill = new HierarchyGhostCellInterpolation();
+    hier_bdry_fill->initializeOperatorState(transaction_comps, u_p->getPatchHierarchy());
+    hier_bdry_fill->setHomogeneousBc(false);
+    hier_bdry_fill->fillData(half_time);
+    //static const bool homogeneous_bc = false;
+    //solver->d_hier_bdry_fill->setHomogeneousBc(homogeneous_bc);
+    //solver->d_hier_bdry_fill->fillData(half_time);
+    
+    
+    // Create temporary vectors for storage.
+    // U is the interpolated velocity and delU is the slip velocity.
+    //Vec U;
+    //U = vy[2];
+    
+    double delta = 1e-5;
+    double factor = 1.0/delta;
+    double spread_scale = gamma/delta;
+    
+    // checking variable 
+    PetscReal norm = 1234567.8;
+    
+    Vec F_tilde, Ds1, Ds2, Ds3;
+    VecDuplicate(vb[2], &F_tilde);
+    VecDuplicate(vb[1], &Ds1);
+    VecDuplicate(vb[1], &Ds2);
+    VecDuplicate(vb[1], &Ds3);
+    
+    //VecView(vb[2],PETSC_VIEWER_STDOUT_WORLD);
+    
+    for (int pm = 0; pm < 2; pm++)
+    {
+      // Set IB positions to RFD positions
+      ib_method_ops->backwardEulerStep(0,delta);
+      
+      // Compute F +-= (1/delta) * K^T(Q^+-) * Lambda^RFD 
+      solver->d_cib_strategy->computeNetRigidGeneralizedForce(vy[1], // maybe replace with vx[2]
+                                                                F_tilde,
+                                                                /*only_free_dofs*/ true,
+							        /*only_imposed_dofs*/ false);
+      VecAXPY(vb[2], factor, F_tilde);
+      
+      
+      // print size
+      VecNorm(vb[2],NORM_2,&norm);
+      if(pm > 0) pout << "norm after F_tilde = " << norm << "\n";
+      //
+      
+      
+      // Compute D^S1 +-= (1/delta) * K(Q^+-) * U^RFD
+      VecZeroEntries(Ds1); // NEED THIS
+      solver->d_cib_strategy->setRigidBodyVelocity(vy[2], Ds1, /*only_free_dofs*/ true, /*only_imposed_dofs*/ false);
+      VecAXPY(vb[1], factor, Ds1);
+      
+      
+      // print size
+      VecNorm(vb[1],NORM_2,&norm);
+      if(pm > 0) pout << "norm after Ds1 = " << norm << "\n";
+      //
+      
+      
+      // D^S2 -+= (1/delta) *  J(Q^+-) * u.
+      VecZeroEntries(Ds2); // TODO maybe don't need
+      solver->d_cib_strategy->setInterpolatedVelocityVector(Ds2, half_time);  // TODO might need to set this back?
+      ib_method_ops->interpolateVelocity(u_data_idx,
+					std::vector<Pointer<CoarsenSchedule<NDIM> > >(),
+					std::vector<Pointer<RefineSchedule<NDIM> > >(),
+					half_time);
+
+      solver->d_cib_strategy->getInterpolatedVelocity(Ds2, half_time, beta);
+      VecAXPY(vb[1], -1.0*factor, Ds2);
+      
+      // print size
+      VecNorm(vb[1],NORM_2,&norm);
+      if(pm > 0) pout << "norm after Ds2 = " << norm << "\n";
+      //
+      
+      // g^S3 -+= (1/delta) *  S(Q^+-) * Lambda.
+      solver->d_cib_strategy->setConstraintForce(vy[1], half_time, spread_scale);
+      ib_method_ops->spreadForce(g_data_idx, NULL, std::vector<Pointer<RefineSchedule<NDIM> > >(), half_time);
+      
+      // Set Factor for negative computations
+      factor *= -1.0;
+      delta *= -1.0;
+      spread_scale *= -1.0;
+    }
+    // Reset IB positions
+    ib_method_ops->backwardEulerStep(0,0);
+    
+    
+    // Unconstrained solve:(u^S3,p^S3)   = L^-1(g^S3, 0)
+    dynamic_cast<IBTK::LinearSolver*>(solver->d_LInv.getPointer())->setInitialGuessNonzero(false);
+    dynamic_cast<IBTK::LinearSolver*>(solver->d_LInv.getPointer())->setHomogeneousBc(true);
+    solver->d_LInv->solveSystem(*u_p, *g_h);
+    
+    u_data_idx = u_p->getComponentDescriptorIndex(0);
+    transaction_comps[0] = InterpolationTransactionComponent(u_data_idx,
+                                       DATA_REFINE_TYPE,
+                                       USE_CF_INTERPOLATION,
+                                       DATA_COARSEN_TYPE,
+                                       BDRY_EXTRAP_TYPE,
+                                       CONSISTENT_TYPE_2_BDRY,
+                                       solver->d_u_bc_coefs,
+                                       solver->d_fill_pattern);
+    
+    //Pointer<HierarchyGhostCellInterpolation> hier_bdry_fill_2 = new HierarchyGhostCellInterpolation();
+    hier_bdry_fill->initializeOperatorState(transaction_comps, u_p->getPatchHierarchy());
+    hier_bdry_fill->setHomogeneousBc(false);
+    hier_bdry_fill->fillData(half_time);
+    
+    
+    // D^S3 = J(Q) * u^S3.
+    VecZeroEntries(Ds3); // TODO maybe don't need
+    solver->d_cib_strategy->setInterpolatedVelocityVector(Ds3, half_time);  // TODO might need to set this back?
+    ib_method_ops->interpolateVelocity(u_data_idx,
+					std::vector<Pointer<CoarsenSchedule<NDIM> > >(),
+					std::vector<Pointer<RefineSchedule<NDIM> > >(),
+					half_time);
+
+    solver->d_cib_strategy->getInterpolatedVelocity(Ds3, half_time, beta);
+    VecAXPY(vb[1], -1.0, Ds3);
+    
+    // print size
+    VecNorm(Ds3,NORM_2,&norm);
+    pout << "norm of Ds3 = " << norm << "\n";
+    //
+    
+    //VecView(vb[2],PETSC_VIEWER_STDOUT_WORLD);
+    
+    // Destroy temporary vectors
+    g_h->resetLevels(g_h->getCoarsestLevelNumber(),
+                     std::min(g_h->getFinestLevelNumber(), g_h->getPatchHierarchy()->getFinestLevelNumber()));
+    g_h->freeVectorComponents();
+    g_h.setNull();
+    
+    //VecDestroy(&U);
+    VecDestroy(&F_tilde);
+    VecDestroy(&Ds1);
+    VecDestroy(&Ds2);
+    VecDestroy(&Ds3);
+    
+    IBTK::PETScSAMRAIVectorReal::restoreSAMRAIVectorRead(vb[0], &vb0);
+    IBTK::PETScSAMRAIVectorReal::restoreSAMRAIVector(vy[0], &vy0);
+
+} // ComputeRFD_RHS (Brennan Sprinkle)
 
 // Routine to log output of CIBSaddlePointSolver
 PetscErrorCode
