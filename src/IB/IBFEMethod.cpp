@@ -397,11 +397,11 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
     NumericVector<double>* X_vec = NULL;
     NumericVector<double>* X_ghost_vec = d_X_IB_ghost_vecs[part];
 
-    AutoPtr<NumericVector<double> > P_i_rhs_vec = (*P_i_vec).zero_clone();
+    UniquePtr<NumericVector<double> > P_i_rhs_vec = (*P_i_vec).zero_clone();
     (*P_i_rhs_vec).zero();
     DenseVector<double> P_i_rhs_e;
 
-    AutoPtr<NumericVector<double> > P_o_rhs_vec = (*P_o_vec).zero_clone();
+    UniquePtr<NumericVector<double> > P_o_rhs_vec = (*P_o_vec).zero_clone();
     (*P_o_rhs_vec).zero();
     DenseVector<double> P_o_rhs_e;
 
@@ -423,7 +423,7 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
     EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();
     const MeshBase& mesh = equation_systems->get_mesh();
     const unsigned int dim = mesh.mesh_dimension();
-    AutoPtr<QBase> qrule;
+    UniquePtr<QBase> qrule;
 
     std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
 
@@ -435,8 +435,8 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
 
     for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 
-    AutoPtr<FEBase> X_fe_autoptr(NULL);
-    X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_autoptr(NULL);
+    X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
 
     FEBase* X_fe = X_fe_autoptr.get();
 
@@ -956,11 +956,11 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
         NumericVector<double>* X_vec = NULL;
         NumericVector<double>* X_ghost_vec = d_X_IB_ghost_vecs[part];
 
-        AutoPtr<NumericVector<double> > P_i_rhs_vec = (*P_i_vec).zero_clone();
+        UniquePtr<NumericVector<double> > P_i_rhs_vec = (*P_i_vec).zero_clone();
         (*P_i_rhs_vec).zero();
         DenseVector<double> P_i_rhs_e;
 
-        AutoPtr<NumericVector<double> > P_o_rhs_vec = (*P_o_vec).zero_clone();
+        UniquePtr<NumericVector<double> > P_o_rhs_vec = (*P_o_vec).zero_clone();
         (*P_o_rhs_vec).zero();
         DenseVector<double> P_o_rhs_e;
 
@@ -982,7 +982,7 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
         EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();
         const MeshBase& mesh = equation_systems->get_mesh();
         const unsigned int dim = mesh.mesh_dimension();
-        AutoPtr<QBase> qrule;
+        UniquePtr<QBase> qrule;
 
         std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
 
@@ -995,8 +995,8 @@ IBFEMethod::interpolatePressureForTraction(const int p_data_idx, const double da
 
         for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 
-        AutoPtr<FEBase> X_fe_autoptr(NULL);
-        X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+        UniquePtr<FEBase> X_fe_autoptr(NULL);
+        X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
 
         FEBase* X_fe = X_fe_autoptr.get();
 
@@ -2603,7 +2603,7 @@ IBFEMethod::computeFluidTraction(const double data_time,
     P_i_vec->localize(*P_i_ghost_vec);
     P_o_vec->localize(*P_o_ghost_vec);
 
-    AutoPtr<NumericVector<double> > TAU_rhs_vec = (*TAU_vec).zero_clone();
+    UniquePtr<NumericVector<double> > TAU_rhs_vec = (*TAU_vec).zero_clone();
     (*TAU_rhs_vec).zero();
     DenseVector<double> TAU_rhs_e[NDIM];
 
@@ -2611,7 +2611,7 @@ IBFEMethod::computeFluidTraction(const double data_time,
     EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();
     const MeshBase& mesh = equation_systems->get_mesh();
     const unsigned int dim = mesh.mesh_dimension();
-    AutoPtr<QBase> qrule;
+    UniquePtr<QBase> qrule;
 
     std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
 
@@ -2623,8 +2623,8 @@ IBFEMethod::computeFluidTraction(const double data_time,
 
     for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 
-    AutoPtr<FEBase> X_fe_autoptr(NULL);
-    X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_autoptr(NULL);
+    X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
 
     FEBase* X_fe = X_fe_autoptr.get();
 
@@ -3244,29 +3244,29 @@ IBFEMethod::ComputeVorticityForTraction(const int u_data_idx, const double data_
     NumericVector<double>* X_vec = NULL;
     NumericVector<double>* X_ghost_vec = d_X_IB_ghost_vecs[part];
 
-    AutoPtr<NumericVector<double> > du_y_rhs_vec = (*du_y_vec).zero_clone();
+    UniquePtr<NumericVector<double> > du_y_rhs_vec = (*du_y_vec).zero_clone();
     (*du_y_rhs_vec).zero();
     DenseVector<double> du_y_rhs_e;
 
-    AutoPtr<NumericVector<double> > dv_x_rhs_vec = (*dv_x_vec).zero_clone();
+    UniquePtr<NumericVector<double> > dv_x_rhs_vec = (*dv_x_vec).zero_clone();
     (*dv_x_rhs_vec).zero();
     DenseVector<double> dv_x_rhs_e;
 
 #if (NDIM == 3)
 
-    AutoPtr<NumericVector<double> > dw_y_rhs_vec = (*dw_y_vec).zero_clone();
+    UniquePtr<NumericVector<double> > dw_y_rhs_vec = (*dw_y_vec).zero_clone();
     (*dw_y_rhs_vec).zero();
     DenseVector<double> dw_y_rhs_e;
 
-    AutoPtr<NumericVector<double> > dw_x_rhs_vec = (*dw_x_vec).zero_clone();
+    UniquePtr<NumericVector<double> > dw_x_rhs_vec = (*dw_x_vec).zero_clone();
     (*dw_x_rhs_vec).zero();
     DenseVector<double> dw_x_rhs_e;
 
-    AutoPtr<NumericVector<double> > du_z_rhs_vec = (*du_z_vec).zero_clone();
+    UniquePtr<NumericVector<double> > du_z_rhs_vec = (*du_z_vec).zero_clone();
     (*du_z_rhs_vec).zero();
     DenseVector<double> du_z_rhs_e;
 
-    AutoPtr<NumericVector<double> > dv_z_rhs_vec = (*dv_z_vec).zero_clone();
+    UniquePtr<NumericVector<double> > dv_z_rhs_vec = (*dv_z_vec).zero_clone();
     (*dv_z_rhs_vec).zero();
     DenseVector<double> dv_z_rhs_e;
 
@@ -3289,7 +3289,7 @@ IBFEMethod::ComputeVorticityForTraction(const int u_data_idx, const double data_
     EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();
     const MeshBase& mesh = equation_systems->get_mesh();
     const unsigned int dim = mesh.mesh_dimension();
-    AutoPtr<QBase> qrule;
+    UniquePtr<QBase> qrule;
 
     std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
 
@@ -3301,8 +3301,8 @@ IBFEMethod::ComputeVorticityForTraction(const int u_data_idx, const double data_
 
     for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 
-    AutoPtr<FEBase> X_fe_autoptr(NULL);
-    X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_autoptr(NULL);
+    X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
 
     FEBase* X_fe = X_fe_autoptr.get();
 
@@ -4619,11 +4619,11 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
         NumericVector<double>* X_ghost_vec = d_X_IB_ghost_vecs[part];
         NumericVector<double>* U_vec = NULL;
         
-        AutoPtr<NumericVector<double> > WSS_i_rhs_vec = (*WSS_i_vec).zero_clone();
+        UniquePtr<NumericVector<double> > WSS_i_rhs_vec = (*WSS_i_vec).zero_clone();
         (*WSS_i_rhs_vec).zero();
 		DenseVector<double> WSS_i_rhs_e[NDIM];
 		
-	    AutoPtr<NumericVector<double> > WSS_o_rhs_vec = (*WSS_o_vec).zero_clone();
+	    UniquePtr<NumericVector<double> > WSS_o_rhs_vec = (*WSS_o_vec).zero_clone();
 	    (*WSS_o_rhs_vec).zero();
 		DenseVector<double> WSS_o_rhs_e[NDIM];
 		
@@ -4648,7 +4648,7 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
 		EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();	
 		const MeshBase& mesh = equation_systems->get_mesh();
 		const unsigned int dim = mesh.mesh_dimension();
-		AutoPtr<QBase> qrule;	
+		UniquePtr<QBase> qrule;	
 		System& U_system = equation_systems->get_system(VELOCITY_SYSTEM_NAME);
 		const unsigned int n_vars = U_system.n_vars();
 		const DofMap& U_dof_map = U_system.get_dof_map();
@@ -4670,10 +4670,10 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
 
 		for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 		
-		AutoPtr<FEBase> U_fe_autoptr(FEBase::build(dim, U_fe_type)), X_fe_autoptr(NULL);
+		UniquePtr<FEBase> U_fe_autoptr(FEBase::build(dim, U_fe_type)), X_fe_autoptr(NULL);
 		if (U_fe_type != X_fe_type)
 		{
-			X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+			X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
 		}
 		FEBase* U_fe = U_fe_autoptr.get();
 		FEBase* X_fe = X_fe_autoptr.get() ? X_fe_autoptr.get() : U_fe_autoptr.get();
@@ -4756,7 +4756,7 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
 		VecGhostGetLocalForm(X_global_vec, &X_local_vec);
 		double* X_local_soln;
 		VecGetArray(X_local_vec, &X_local_soln);
-		AutoPtr<NumericVector<double> > U_rhs_vec = (*U_vec).zero_clone();
+		UniquePtr<NumericVector<double> > U_rhs_vec = (*U_vec).zero_clone();
 		(*U_rhs_vec).zero();
 		DenseVector<double> U_rhs_e[n_vars];
 		boost::multi_array<double, 2> X_node;
@@ -5958,11 +5958,11 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
         //~ NumericVector<double>* X_vec = NULL;
         //~ NumericVector<double>* X_ghost_vec = d_X_IB_ghost_vecs[part];
         //~ NumericVector<double>* U_vec = NULL;
-        //~ AutoPtr<NumericVector<double> > WSS_i_rhs_vec = (*WSS_i_vec).zero_clone();
+        //~ UniquePtr<NumericVector<double> > WSS_i_rhs_vec = (*WSS_i_vec).zero_clone();
         //~ (*WSS_i_rhs_vec).zero();
 		//~ DenseVector<double> WSS_i_rhs_e[NDIM];
 		//~ 
-	    //~ AutoPtr<NumericVector<double> > WSS_o_rhs_vec = (*WSS_o_vec).zero_clone();
+	    //~ UniquePtr<NumericVector<double> > WSS_o_rhs_vec = (*WSS_o_vec).zero_clone();
 	    //~ (*WSS_o_rhs_vec).zero();
 		//~ DenseVector<double> WSS_o_rhs_e[NDIM];
 //~ 
@@ -5987,7 +5987,7 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
         //~ EquationSystems* equation_systems = d_fe_data_managers[part]->getEquationSystems();
         //~ const MeshBase& mesh = equation_systems->get_mesh();
         //~ const unsigned int dim = mesh.mesh_dimension();
-        //~ AutoPtr<QBase> qrule;
+        //~ UniquePtr<QBase> qrule;
         //~ System& U_system = equation_systems->get_system(VELOCITY_SYSTEM_NAME);
         //~ const unsigned int n_vars = U_system.n_vars();
         //~ const DofMap& U_dof_map = U_system.get_dof_map();
@@ -6011,10 +6011,10 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
 //~ 
         //~ for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
 //~ 
-        //~ AutoPtr<FEBase> U_fe_autoptr(FEBase::build(dim, U_fe_type)), X_fe_autoptr(NULL);
+        //~ UniquePtr<FEBase> U_fe_autoptr(FEBase::build(dim, U_fe_type)), X_fe_autoptr(NULL);
         //~ if (U_fe_type != X_fe_type)
         //~ {
-            //~ X_fe_autoptr = AutoPtr<FEBase>(FEBase::build(dim, X_fe_type));
+            //~ X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
         //~ }
         //~ FEBase* U_fe = U_fe_autoptr.get();
         //~ FEBase* X_fe = X_fe_autoptr.get() ? X_fe_autoptr.get() : U_fe_autoptr.get();
@@ -6095,7 +6095,7 @@ IBFEMethod::interpolateVelocity(const int u_data_idx,
         //~ VecGhostGetLocalForm(X_global_vec, &X_local_vec);
         //~ double* X_local_soln;
         //~ VecGetArray(X_local_vec, &X_local_soln);
-        //~ AutoPtr<NumericVector<double> > U_rhs_vec = (*U_vec).zero_clone();
+        //~ UniquePtr<NumericVector<double> > U_rhs_vec = (*U_vec).zero_clone();
         //~ (*U_rhs_vec).zero();
         //~ std::vector<DenseVector<double> > U_rhs_e(n_vars);
         //~ boost::multi_array<double, 2> X_node;
@@ -7885,48 +7885,48 @@ IBFEMethod::computeInteriorForceDensity(PetscVector<double>& F_vec,
     const unsigned int dim = mesh.mesh_dimension();
 
     // Setup global and elemental right-hand-side vectors.
-    AutoPtr<NumericVector<double> > F_rhs_vec = F_vec.zero_clone();
+    UniquePtr<NumericVector<double> > F_rhs_vec = F_vec.zero_clone();
     DenseVector<double> F_rhs_e[NDIM];
 
-    AutoPtr<NumericVector<double> > F_t_rhs_vec = F_t_vec.zero_clone();
+    UniquePtr<NumericVector<double> > F_t_rhs_vec = F_t_vec.zero_clone();
     DenseVector<double> F_t_rhs_e;
     
-    AutoPtr<NumericVector<double> > H_rhs_vec = H_vec.zero_clone();
+    UniquePtr<NumericVector<double> > H_rhs_vec = H_vec.zero_clone();
     DenseVector<double> H_rhs_e;
     
-    AutoPtr<NumericVector<double> > F_n_rhs_vec = F_n_vec.zero_clone();
+    UniquePtr<NumericVector<double> > F_n_rhs_vec = F_n_vec.zero_clone();
     DenseVector<double> F_n_rhs_e;
  
 #if (NDIM == 3)   
-    AutoPtr<NumericVector<double> > F_b_rhs_vec = F_b_vec.zero_clone();
+    UniquePtr<NumericVector<double> > F_b_rhs_vec = F_b_vec.zero_clone();
     DenseVector<double> F_b_rhs_e;
 #endif     
-    AutoPtr<NumericVector<double> > dP_j_rhs_vec = dP_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > dP_j_rhs_vec = dP_j_vec.zero_clone();
     DenseVector<double> dP_j_rhs_e[NDIM];
     
-    AutoPtr<NumericVector<double> > P_j_rhs_vec = P_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > P_j_rhs_vec = P_j_vec.zero_clone();
     DenseVector<double> P_j_rhs_e;
 
-    AutoPtr<NumericVector<double> > du_j_rhs_vec = du_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > du_j_rhs_vec = du_j_vec.zero_clone();
     DenseVector<double> du_j_rhs_e[NDIM];
 
-    AutoPtr<NumericVector<double> > dv_j_rhs_vec = dv_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > dv_j_rhs_vec = dv_j_vec.zero_clone();
     DenseVector<double> dv_j_rhs_e[NDIM];
 
-    AutoPtr<NumericVector<double> > n_qp_rhs_vec = n_qp_vec.zero_clone();
+    UniquePtr<NumericVector<double> > n_qp_rhs_vec = n_qp_vec.zero_clone();
     DenseVector<double> n_qp_rhs_e[NDIM];
 
-    AutoPtr<NumericVector<double> > d2u_j_rhs_vec = d2u_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > d2u_j_rhs_vec = d2u_j_vec.zero_clone();
     DenseVector<double> d2u_j_rhs_e[NDIM];
 
-    AutoPtr<NumericVector<double> > d2v_j_rhs_vec = d2v_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > d2v_j_rhs_vec = d2v_j_vec.zero_clone();
     DenseVector<double> d2v_j_rhs_e[NDIM];
 
 #if (NDIM == 3)
-    AutoPtr<NumericVector<double> > dw_j_rhs_vec = dw_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > dw_j_rhs_vec = dw_j_vec.zero_clone();
     DenseVector<double> dw_j_rhs_e[NDIM];
     
-    AutoPtr<NumericVector<double> > d2w_j_rhs_vec = d2w_j_vec.zero_clone();
+    UniquePtr<NumericVector<double> > d2w_j_rhs_vec = d2w_j_vec.zero_clone();
     DenseVector<double> d2w_j_rhs_e[NDIM];
 #endif 
 
@@ -8086,7 +8086,7 @@ IBFEMethod::computeInteriorForceDensity(PetscVector<double>& F_vec,
     std::vector<int> no_vars;
 
     FEDataInterpolation fe(dim, d_fe_data_managers[part]);
-    AutoPtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
+    UniquePtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
     fe.attachQuadratureRule(qrule.get());
     fe.evalQuadraturePoints();
     fe.evalQuadratureWeights();
@@ -8096,7 +8096,7 @@ IBFEMethod::computeInteriorForceDensity(PetscVector<double>& F_vec,
         force_fcn_system_idxs, d_lag_force_fcn_data[part].system_data, equation_systems);
     fe.init(/*use_IB_ghosted_vecs*/ false);
 
-    AutoPtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
     X_fe_base->attach_quadrature_rule(qrule.get());
     const std::vector<std::vector<double> >& X_phi = X_fe_base->get_phi();
     const std::vector<std::vector<double> >& X_dphi_dxi = X_fe_base->get_dphidxi();
@@ -8683,7 +8683,7 @@ IBFEMethod::imposeJumpConditionsWeak(const int f_data_idx,
     std::vector<int> vars(NDIM);
     for (unsigned int d = 0; d < NDIM; ++d) vars[d] = d;
     FEDataInterpolation fe(dim, d_fe_data_managers[part]);
-    AutoPtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
+    UniquePtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
     fe.attachQuadratureRule(qrule.get());
     fe.evalQuadraturePoints();
     fe.evalQuadratureWeights();
@@ -8800,7 +8800,7 @@ IBFEMethod::imposeJumpConditionsWeak(const int f_data_idx,
     std::vector<std::vector<unsigned int> > dP_j_dof_indices(NDIM);
 
 
-    AutoPtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
     const std::vector<std::vector<double> >& X_phi = X_fe_base->get_phi();
     const std::vector<std::vector<double> >& X_dphi_dxi = X_fe_base->get_dphidxi();
     const std::vector<std::vector<double> >& X_dphi_deta = X_fe_base->get_dphideta();
@@ -10076,7 +10076,7 @@ IBFEMethod::imposeJumpConditionsPointWise(const int f_data_idx,
     std::vector<int> vars(NDIM);
     for (unsigned int d = 0; d < NDIM; ++d) vars[d] = d;
     FEDataInterpolation fe(dim, d_fe_data_managers[part]);
-    AutoPtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
+    UniquePtr<QBase> qrule = QBase::build(d_default_quad_type[part], dim, d_default_quad_order[part]);
     fe.attachQuadratureRule(qrule.get());
     fe.evalQuadraturePoints();
     fe.evalQuadratureWeights();
@@ -10207,7 +10207,7 @@ IBFEMethod::imposeJumpConditionsPointWise(const int f_data_idx,
     std::vector<std::vector<unsigned int> > dP_j_dof_indices(NDIM);
 
 
-    AutoPtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
+    UniquePtr<FEBase> X_fe_base(FEBase::build(dim, X_fe_type));
     const std::vector<std::vector<double> >& X_phi = X_fe_base->get_phi();
     const std::vector<std::vector<double> >& X_dphi_dxi = X_fe_base->get_dphidxi();
     const std::vector<std::vector<double> >& X_dphi_deta = X_fe_base->get_dphideta();
