@@ -112,6 +112,7 @@ DIM_INDEPENDENT_SOURCES = \
 ../src/navier_stokes/INSCollocatedConvectiveOperatorManager.cpp \
 ../src/navier_stokes/INSCollocatedHierarchyIntegrator.cpp \
 ../src/navier_stokes/INSCollocatedPPMConvectiveOperator.cpp \
+../src/navier_stokes/INSCollocatedWavePropConvectiveOperator.cpp \
 ../src/navier_stokes/INSCollocatedVelocityBcCoef.cpp \
 ../src/navier_stokes/INSHierarchyIntegrator.cpp \
 ../src/navier_stokes/INSIntermediateVelocityBcCoef.cpp \
