@@ -206,8 +206,8 @@ private:
 
     // Reconstruction weights
     int d_k;
-    std::vector<double> d_interp_weights_f, d_smooth_weights, d_interp_weights_centers_f, d_smooth_weights_centers;
-    std::vector<std::vector<double> > d_interp_weights, d_interp_weights_centers;
+    std::vector<double> d_interp_weights_f, d_smooth_weights;
+    std::vector<std::vector<double> > d_interp_weights;
 };
 } // namespace IBAMR
 

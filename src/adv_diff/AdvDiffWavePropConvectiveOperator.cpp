@@ -18,8 +18,6 @@ void adv_diff_wp_convective_op2d_(const double*,
                                   const double*,
                                   const double*,
                                   const double*,
-                                  const double*,
-                                  const double*,
                                   const int&);
 #endif
 #if (NDIM == 3)
@@ -168,9 +166,7 @@ AdvDiffWavePropConvectiveOperator::applyConvectiveOperator(int Q_idx, int Y_idx)
                                          patch_upper(1),
                                          dx,
                                          d_interp_weights_f.data(),
-                                         d_interp_weights_centers_f.data(),
                                          d_smooth_weights.data(),
-                                         d_smooth_weights_centers.data(),
                                          d_k);
 
 #endif
@@ -289,11 +285,8 @@ AdvDiffWavePropConvectiveOperator::deallocateOperatorState()
     d_ghostfill_scheds_Q.clear();
 
     d_smooth_weights.clear();
-    d_smooth_weights_centers.clear();
     d_interp_weights.clear();
     d_interp_weights_f.clear();
-    d_interp_weights_centers.clear();
-    d_interp_weights_centers_f.clear();
     d_is_initialized = false;
     return;
 }
@@ -301,16 +294,12 @@ void
 AdvDiffWavePropConvectiveOperator::calculateWeights()
 {
     d_smooth_weights.resize(d_k);
-    d_smooth_weights_centers.resize(d_k);
     switch (d_k)
     {
     case 3:
         d_smooth_weights[0] = 0.3;
         d_smooth_weights[1] = 0.6;
         d_smooth_weights[2] = 0.1;
-        d_smooth_weights_centers[0] = -9.0 / 80.0;
-        d_smooth_weights_centers[1] = 49.0 / 40.0;
-        d_smooth_weights_centers[2] = -9.0 / 80.0;
         break;
     }
     d_interp_weights.resize(d_k + 1);
@@ -340,29 +329,13 @@ AdvDiffWavePropConvectiveOperator::calculateWeights()
             }
         }
     }
-    d_interp_weights_centers.resize(d_k + 1);
-    for (int j = 0; j < d_k + 1; ++j) d_interp_weights_centers[j].resize(d_k);
-    d_interp_weights_centers[0][0] = 2.958333333333325;
-    d_interp_weights_centers[0][1] = -2.916666666666655;
-    d_interp_weights_centers[0][2] = 0.958333333333329;
-    d_interp_weights_centers[1][0] = 0.958333333333337;
-    d_interp_weights_centers[1][1] = 0.083333333333333;
-    d_interp_weights_centers[1][2] = -0.041666666666666;
-    d_interp_weights_centers[2][0] = -0.041666666666;
-    d_interp_weights_centers[2][1] = 1.083333333333337;
-    d_interp_weights_centers[2][2] = -0.041666666666666;
-    d_interp_weights_centers[3][0] = -0.041666666666666;
-    d_interp_weights_centers[3][1] = 0.083333333333333;
-    d_interp_weights_centers[3][2] = 0.958333333333337;
 
     d_interp_weights_f.resize((d_k + 1) * d_k);
-    d_interp_weights_centers_f.resize((d_k + 1) * d_k);
     for (int i = 0; i <= d_k; ++i)
     {
         for (int j = 0; j < d_k; ++j)
         {
             d_interp_weights_f[j * (d_k + 1) + i] = d_interp_weights[i][j];
-            d_interp_weights_centers_f[j * (d_k + 1) + i] = d_interp_weights_centers[i][j];
         }
     }
     return;

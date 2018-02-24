@@ -105,7 +105,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      &            r_data_0, r_data_1, r_data_2, r_gcw,
      &            ilower0, ilower1, ilower2,
      &            iupper0, iupper1, iupper2,
-     &            weights_cell_sides, smooth_weights_sides, k)
+     &            interp_coefs, smooth_weights, k)
 
       implicit none
       INTEGER k
@@ -121,8 +121,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       REAL r_data_1(FACE3d1(ilower,iupper,r_gcw),0:1)
       REAL r_data_2(FACE3d2(ilower,iupper,r_gcw),0:1)
 
-      REAL weights_cell_sides(0:k,0:(k-1))
-      REAL smooth_weights_sides(0:(k-1))
+      REAL interp_coefs(0:k,0:(k-1))
+      REAL smooth_weights(0:(k-1))
 
       REAL interp_values_p(0:(k-1))
       REAL interp_values_n(0:(k-1))
@@ -148,9 +148,9 @@ c     X-Direction
             interp_values_n(r) = 0.d0
             do j=0,k-1
               interp_values_p(r) = interp_values_p(r)
-     &          + weights_cell_sides(r,j)*q_data(i0-r+j,i1,i2)
+     &          + interp_coefs(r,j)*q_data(i0-r+j,i1,i2)
               interp_values_n(r) = interp_values_n(r)
-     &          + weights_cell_sides(r+1,j)*q_data(i0-1-r+j,i1,i2)
+     &          + interp_coefs(r+1,j)*q_data(i0-1-r+j,i1,i2)
             enddo
           enddo
           smooth_id_p(0) = 13.d0/12.d0*(q_data(i0,i1,i2)
@@ -179,7 +179,7 @@ c     X-Direction
 
           total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(k-1-j)/(eps+smooth_id_p(j))**2
+             alpha = smooth_weights(k-1-j)/(eps+smooth_id_p(j))**2
              total = total + alpha
              weights_p(j) = alpha
            enddo
@@ -188,7 +188,7 @@ c     X-Direction
            enddo
            total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(j)/(eps+smooth_id_n(j))**2
+             alpha = smooth_weights(j)/(eps+smooth_id_n(j))**2
              total = total + alpha
              weights_n(j) = alpha
            enddo
@@ -216,9 +216,9 @@ c     Interpolate in other direction
             interp_values_n(r) = 0.d0
             do j=0,k-1
               interp_values_p(r) = interp_values_p(r)
-     &          + weights_cell_sides(r,j)*q_data(i0,i1-r+j,i2)
+     &          + interp_coefs(r,j)*q_data(i0,i1-r+j,i2)
               interp_values_n(r) = interp_values_n(r)
-     &          + weights_cell_sides(r+1,j)*q_data(i0,i1-1-r+j,i2)
+     &          + interp_coefs(r+1,j)*q_data(i0,i1-1-r+j,i2)
             enddo
           enddo
           smooth_id_p(0) = 13.d0/12.d0*(q_data(i0,i1,i2)
@@ -247,7 +247,7 @@ c     Interpolate in other direction
 
           total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(k-1-j)/(eps+smooth_id_p(j))**2
+             alpha = smooth_weights(k-1-j)/(eps+smooth_id_p(j))**2
              total = total + alpha
              weights_p(j) = alpha
            enddo
@@ -256,7 +256,7 @@ c     Interpolate in other direction
            enddo
            total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(j)/(eps+smooth_id_n(j))**2
+             alpha = smooth_weights(j)/(eps+smooth_id_n(j))**2
              total = total + alpha
              weights_n(j) = alpha
            enddo
@@ -284,9 +284,9 @@ c     Interpolate in other direction
             interp_values_n(r) = 0.d0
             do j=0,k-1
               interp_values_p(r) = interp_values_p(r)
-     &          + weights_cell_sides(r,j)*q_data(i0,i1,i2-r+j)
+     &          + interp_coefs(r,j)*q_data(i0,i1,i2-r+j)
               interp_values_n(r) = interp_values_n(r)
-     &          + weights_cell_sides(r+1,j)*q_data(i0,i1,i2-1-r+j)
+     &          + interp_coefs(r+1,j)*q_data(i0,i1,i2-1-r+j)
             enddo
           enddo
           smooth_id_p(0) = 13.d0/12.d0*(q_data(i0,i1,i2)
@@ -315,7 +315,7 @@ c     Interpolate in other direction
 
           total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(k-1-j)/(eps+smooth_id_p(j))**2
+             alpha = smooth_weights(k-1-j)/(eps+smooth_id_p(j))**2
              total = total + alpha
              weights_p(j) = alpha
            enddo
@@ -324,7 +324,7 @@ c     Interpolate in other direction
            enddo
            total = 0.d0
            do j=0,k-1
-             alpha = smooth_weights_sides(j)/(eps+smooth_id_n(j))**2
+             alpha = smooth_weights(j)/(eps+smooth_id_n(j))**2
              total = total + alpha
              weights_n(j) = alpha
            enddo
