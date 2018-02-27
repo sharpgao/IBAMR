@@ -89,8 +89,6 @@ void adv_diff_wp_convective_op2d_(const double*,
                                   const int&,
                                   const int&,
                                   const double*,
-                                  const double*,
-                                  const double*,
                                   const int&);
 void navier_stokes_interp_comps2d_(const int&,
                                    const int&,
@@ -134,8 +132,6 @@ void adv_diff_wp_convective_op3d_(const double* q_data,
                                   const int& iupper1,
                                   const int& iupper2,
                                   const double* dx,
-                                  const double* interp_coefs,
-                                  const double* smooth_weights,
                                   const int& k);
 
 void navier_stokes_interp_comps3d_(const int&,
@@ -226,7 +222,6 @@ INSStaggeredWavePropConvectiveOperator::INSStaggeredWavePropConvectiveOperator(
     Pointer<VariableContext> context = var_db->getContext("INSStaggeredWavePropConvectiveOperator::CONTEXT");
 
     d_k = 3;
-    calculateWeights();
 
     const std::string U_var_name = "INSStaggeredWavePropConvectiveOperator::U";
     d_U_var = var_db->getVariable(U_var_name);
@@ -411,8 +406,6 @@ INSStaggeredWavePropConvectiveOperator::applyConvectiveOperator(const int U_idx,
                                              side_boxes[axis].upper(0),
                                              side_boxes[axis].upper(1),
                                              dx,
-                                             d_interp_weights_f.data(),
-                                             d_smooth_weights.data(),
                                              d_k);
 #endif
 #if (NDIM == 3)
@@ -432,8 +425,6 @@ INSStaggeredWavePropConvectiveOperator::applyConvectiveOperator(const int U_idx,
                                              side_boxes[axis].upper(1),
                                              side_boxes[axis].upper(2),
                                              dx,
-                                             d_interp_weights_f.data(),
-                                             d_smooth_weights.data(),
                                              d_k);
 #endif
             }
@@ -506,62 +497,6 @@ INSStaggeredWavePropConvectiveOperator::deallocateOperatorState()
 
     return;
 } // deallocateOperatorState
-
-/////////////////////////////// PROTECTED ////////////////////////////////////
-
-/////////////////////////////// PRIVATE //////////////////////////////////////
-void
-INSStaggeredWavePropConvectiveOperator::calculateWeights()
-{
-    d_smooth_weights.resize(d_k);
-    switch (d_k)
-    {
-    case 3:
-        d_smooth_weights[0] = 0.3;
-        d_smooth_weights[1] = 0.6;
-        d_smooth_weights[2] = 0.1;
-        break;
-    }
-    d_interp_weights.resize(d_k + 1);
-    for (int i = 0; i < d_k + 1; ++i) d_interp_weights[i].resize(d_k);
-    for (int r = -1; r < d_k; ++r)
-    {
-        for (int j = 0; j < d_k; ++j)
-        {
-            d_interp_weights[r + 1][j] = 0.0;
-            for (int m = j + 1; m <= d_k; ++m)
-            {
-                double num = 0.0, den = 1.0;
-                for (int l = 0; l <= d_k; ++l)
-                {
-                    double temp = 1.0;
-                    if (l != m)
-                    {
-                        den *= (m - l);
-                        for (int q = 0; q <= d_k; ++q)
-                        {
-                            if (q != m && q != l) temp *= (r - q + 1);
-                        }
-                        num += temp;
-                    }
-                }
-                d_interp_weights[r + 1][j] += num / den;
-            }
-        }
-    }
-
-    d_interp_weights_f.resize((d_k + 1) * d_k);
-    for (int i = 0; i <= d_k; ++i)
-    {
-        for (int j = 0; j < d_k; ++j)
-        {
-            d_interp_weights_f[j * (d_k + 1) + i] = d_interp_weights[i][j];
-        }
-    }
-    return;
-}
-//////////////////////////////////////////////////////////////////////////////
-
 } // namespace IBAMR
 
 //////////////////////////////////////////////////////////////////////////////

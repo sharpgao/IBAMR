@@ -185,11 +185,6 @@ private:
      */
     INSCollocatedWavePropConvectiveOperator& operator=(const INSCollocatedWavePropConvectiveOperator& that);
 
-    /*!
-     * \brief Calculate WENO weights.
-     */
-    void calculateWeights();
-
     // Cached communications operators.
     std::vector<SAMRAI::solv::RobinBcCoefStrategy<NDIM>*> d_bc_coefs;
     std::string d_bdry_extrap_type;
@@ -204,10 +199,9 @@ private:
     SAMRAI::tbox::Pointer<SAMRAI::pdat::CellVariable<NDIM, double> > d_U_var;
     int d_U_scratch_idx;
 
-    // Reconstruction weights
+    // Reconstruction order (2*k-1)
+    // Currently only avaible for 5th order
     int d_k;
-    std::vector<double> d_interp_weights_f, d_smooth_weights;
-    std::vector<std::vector<double> > d_interp_weights;
 };
 } // namespace IBAMR
 

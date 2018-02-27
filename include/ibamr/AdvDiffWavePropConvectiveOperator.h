@@ -143,11 +143,9 @@ private:
     int d_Q_scratch_idx;
 
     const std::vector<RobinBcCoefStrategy<NDIM>*> d_conc_bc_coefs;
-    // Reconstruction Values
-    void calculateWeights();
+    // Reconstruction Order (2*k-1)
+    // Currently only available for k=3
     int d_k;
-    std::vector<double> d_interp_weights_f, d_smooth_weights;
-    std::vector<std::vector<double> > d_interp_weights;
 
     ConvectiveDifferencingType d_difference_form;
 };

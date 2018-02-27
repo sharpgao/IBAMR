@@ -20,8 +20,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      &            r_data, r_gcw, d,
      &            ilower0, ilower1,
      &            iupper0, iupper1,
-     &            dx,
-     &            interp_coefs, smooth_weights, k)
+     &            dx, k)
 
       implicit none
       INTEGER ilower0, iupper0
@@ -45,15 +44,12 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       INTEGER k, j
       INTEGER i0, i1
-      REAL interp_coefs(0:k,0:(k-1))
-      REAL smooth_weights(0:(k-1))
 
 
       do j=0,(d-1)
       call reconstruct_data_on_patch_2d(q_data(:,:,j), q_gcw,
      &             s_data_0, s_data_1, 0,
-     &             ilower0, ilower1, iupper0, iupper1,
-     &             interp_coefs, smooth_weights, k)
+     &             ilower0, ilower1, iupper0, iupper1, k)
 
       do i1 = ilower1, iupper1
         do i0 = ilower0, iupper0
@@ -89,10 +85,8 @@ c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine reconstruct_data_on_patch_2d(q_data, q_gcw,
      &            r_data_0, r_data_1, r_gcw,
-     &            ilower0, ilower1, iupper0, iupper1,
-     &            interp_weights, smooth_weights, k)
+     &            ilower0, ilower1, iupper0, iupper1, k)
 
-       INTEGER k
        INTEGER ilower0, iupper0
        INTEGER ilower1, iupper1
 
@@ -103,158 +97,24 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        REAL r_data_0(FACE2d0(ilower,iupper,r_gcw),0:1)
        REAL r_data_1(FACE2d1(ilower,iupper,r_gcw),0:1)
 
-       REAL interp_weights(0:k,0:(k-1))
-       REAL smooth_weights(0:k-1)
-
-       REAL interp_values_p(0:k-1)
-       REAL interp_values_n(0:k-1)
-       REAL smooth_id_p(0:k-1)
-       REAL smooth_id_n(0:k-1)
-       REAL weights_p(0:k-1)
-       REAL weights_n(0:k-1)
-       REAL s_vals_x((ilower0-k):(iupper0+k),
-     &               (ilower1):(iupper1))
-       REAL s_vals_y((ilower1-k):(iupper1+k),
-     &               (ilower0):(iupper0))
 
        INTEGER i0, i1
-       INTEGER j, r
 
-       REAL eps, total, alpha
+       REAL WENO5_interp
 
-      eps = 1.0d-7
 c     X DIRECTION
       do i1 = ilower1, iupper1
         do i0=ilower0,iupper0+1
-          do r=0,k-1
-            interp_values_p(r) = 0.d0
-            interp_values_n(r) = 0.d0
-            do j=0,k-1
-              interp_values_p(r) = interp_values_p(r)
-     &          + interp_weights(r,j)*q_data(i0-r+j,i1)
-              interp_values_n(r) = interp_values_n(r)
-     &          + interp_weights(r+1,j)*q_data(i0-1-r+j,i1)
-            enddo
-          enddo
-          smooth_id_p(0) = 13.d0/12.d0*(q_data(i0,i1)
-     &         -2.d0*q_data(i0+1,i1)+q_data(i0+2,i1))**2
-     &      + 0.25d0*(3.d0*q_data(i0,i1)-4.d0*q_data(i0+1,i1)
-     &         +q_data(i0+2,i1))**2
-          smooth_id_p(1) = 13.d0/12.d0*(q_data(i0-1,i1)
-     &        -2.d0*q_data(i0,i1)+q_data(i0+1,i1))**2
-     &      + 0.25d0*(q_data(i0-1,i1)-q_data(i0+1,i1))**2
-          smooth_id_p(2) = 13.d0/12.d0*(q_data(i0-2,i1)
-     &        -2.d0*q_data(i0-1,i1)+q_data(i0,i1))**2
-     &      + 0.25d0*(3.d0*q_data(i0,i1)-4.d0*q_data(i0-1,i1)
-     &        +q_data(i0-2,i1))**2
-
-          smooth_id_n(0) = 13.d0/12.d0*(q_data(i0-1,i1)
-     &        -2.d0*q_data(i0,i1)+q_data(i0+1,i1))**2
-     &      + 0.25d0*(3.d0*q_data(i0-1,i1)-4.d0*q_data(i0,i1)
-     &        +q_data(i0+1,i1))**2
-          smooth_id_n(1) = 13.d0/12.d0*(q_data(i0-2,i1)
-     &        -2.d0*q_data(i0-1,i1)+q_data(i0,i1))**2
-     &      + 0.25d0*(q_data(i0-2,i1)-q_data(i0,i1))**2
-          smooth_id_n(2) = 13.d0/12.d0*(q_data(i0-3,i1)
-     &        -2.d0*q_data(i0-2,i1)+q_data(i0-1,i1))**2
-     &      + 0.25d0*(3.d0*q_data(i0-1,i1)
-     &        -4.d0*q_data(i0-2,i1)+q_data(i0-3,i1))**2
-
-          total = 0.d0
-           do j=0,k-1
-             alpha = smooth_weights(k-1-j)
-     &           /(eps+smooth_id_p(j))**2
-             total = total + alpha
-             weights_p(j) = alpha
-           enddo
-           do j=0,k-1
-             weights_p(j) = weights_p(j)/total
-           enddo
-           total = 0.d0
-           do j=0,k-1
-             alpha = smooth_weights(j)
-     &           /(eps+smooth_id_n(j))**2
-             total = total + alpha
-             weights_n(j) = alpha
-           enddo
-           do j=0,k-1
-             weights_n(j) = weights_n(j)/total
-           enddo
-           r_data_0(i0,i1,0) = 0.d0
-           r_data_0(i0,i1,1) = 0.d0
-           do r=0,k-1
-             r_data_0(i0,i1,0) = r_data_0(i0,i1,0)
-     &               + weights_n(r)*interp_values_n(r)
-             r_data_0(i0,i1,1) = r_data_0(i0,i1,1)
-     &               + weights_p(r)*interp_values_p(r)
-           enddo
+           r_data_0(i0,i1,1) = WENO5_interp(q_data(i0+2:i0-2:-1,i1))
+           r_data_0(i0,i1,0) = WENO5_interp(q_data(i0-3:i0+1,i1))
          enddo
        enddo
 
 c      Y DIRECTION
        do i1 = ilower1,iupper1+1
          do i0 = ilower0,iupper0
-           do r=0,k-1
-             interp_values_p(r) = 0.d0
-             interp_values_n(r) = 0.d0
-             do j=0,k-1
-               interp_values_p(r) = interp_values_p(r)
-     &          + interp_weights(r,j)*q_data(i0,i1+j-r)
-               interp_values_n(r) = interp_values_n(r)
-     &          + interp_weights(r+1,j)*q_data(i0,i1-1+j-r)
-             enddo
-           enddo
-           smooth_id_p(0) = 13.d0/12.d0*(q_data(i0,i1)
-     &        -2.d0*q_data(i0,i1+1)+q_data(i0,i1+2))**2
-     &        +0.25d0*(3.d0*q_data(i0,i1)
-     &        -4.d0*q_data(i0,i1+1)+q_data(i0,i1+2))**2
-           smooth_id_p(1) = 13.d0/12.d0*(q_data(i0,i1-1)
-     &        -2.d0*q_data(i0,i1)+q_data(i0,i1+1))**2
-     &        +0.25d0*(q_data(i0,i1-1)-q_data(i0,i1+1))**2
-           smooth_id_p(2) = 13.d0/12.d0*(q_data(i0,i1-2)
-     &        -2.d0*q_data(i0,i1-1)+q_data(i0,i1))**2
-     &        +0.25d0*(q_data(i0,i1-2)
-     &        -4.d0*q_data(i0,i1-1)+3.d0*q_data(i0,i1))**2
-
-           smooth_id_n(0) = 13.d0/12.d0*(q_data(i0,i1-1)
-     &        -2.d0*q_data(i0,i1)+q_data(i0,i1+1))**2
-     &        +0.25d0*(3.d0*q_data(i0,i1-1)
-     &        -4.d0*q_data(i0,i1)+q_data(i0,i1+1))**2
-           smooth_id_n(1) = 13.d0/12.d0*(q_data(i0,i1-2)
-     &        -2.d0*q_data(i0,i1-1)+q_data(i0,i1))**2
-     &        +0.25d0*(q_data(i0,i1-2)-q_data(i0,i1))**2
-           smooth_id_n(2) = 13.d0/12.d0*(q_data(i0,i1-3)
-     &        -2.d0*q_data(i0,i1-2)+q_data(i0,i1-1))**2
-     &        +0.25d0*(q_data(i0,i1-3)
-     &        -4.d0*q_data(i0,i1-2)+3.d0*q_data(i0,i1-1))**2
-           total = 0.d0
-           do j=0,k-1
-             alpha = smooth_weights(k-1-j)
-     &           /((eps+smooth_id_p(j))**2)
-             total = total + alpha
-             weights_p(j) = alpha
-           enddo
-           do j=0,k-1
-             weights_p(j) = weights_p(j)/total
-           enddo
-           total = 0.d0
-           do j=0,k-1
-             alpha = smooth_weights(j)
-     &           /((eps+smooth_id_n(j))**2)
-             total = total + alpha
-             weights_n(j) = alpha
-           enddo
-           do j=0,k-1
-             weights_n(j) = weights_n(j)/total
-           enddo
-           r_data_1(i1,i0,0) = 0.d0
-           r_data_1(i1,i0,1) = 0.d0
-           do r=0,k-1
-             r_data_1(i1,i0,0) = r_data_1(i1,i0,0)
-     &         + weights_n(r)*interp_values_n(r)
-             r_data_1(i1,i0,1) = r_data_1(i1,i0,1)
-     &         + weights_p(r)*interp_values_p(r)
-           enddo
+           r_data_1(i1,i0,1) = WENO5_interp(q_data(i0,i1+2:i1-2:-1))
+           r_data_1(i1,i0,0) = WENO5_interp(q_data(i0,i1-3:i1+1))
          enddo
        enddo
        end subroutine

@@ -182,11 +182,6 @@ private:
      */
     INSStaggeredWavePropConvectiveOperator& operator=(const INSStaggeredWavePropConvectiveOperator& that);
 
-    /*!
-     * \brief Calculate WENO weights.
-     */
-    void calculateWeights();
-
     // Boundary condition helper object.
     SAMRAI::tbox::Pointer<StaggeredStokesPhysicalBoundaryHelper> d_bc_helper;
 
@@ -204,10 +199,9 @@ private:
     SAMRAI::tbox::Pointer<SAMRAI::pdat::SideVariable<NDIM, double> > d_U_var;
     int d_U_scratch_idx;
 
-    // Reconstruction values.
+    // Reconstruction order 2*k-1.
+    // Currently only available for k=3
     int d_k;
-    std::vector<double> d_interp_weights_f, d_smooth_weights;
-    std::vector<std::vector<double> > d_interp_weights;
 };
 } // namespace IBAMR
 
