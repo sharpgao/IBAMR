@@ -554,7 +554,8 @@ IBFEInstrumentPanel::IBFEInstrumentPanel(const std::string& object_name, Pointer
             TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::initializeHierarchyIndependentData()");
         t_initialize_hierarchy_dependent_data =
             TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::initializeHierarchyDependentData()");
-        t_read_instrument_data = TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::readInstrumentData()");
+        t_read_instrument_data =
+            TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::readInstrumentData()");
         t_write_plot_data = TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::writePlotData()"););
     return;
 } // IBFEInstrumentPanel
@@ -614,7 +615,7 @@ IBFEInstrumentPanel::isInstrumented() const
 
 void
 IBFEInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
-                                                      LDataManager* const l_data_manager)
+                                                        LDataManager* const l_data_manager)
 {
     IBAMR_TIMER_START(t_initialize_hierarchy_independent_data);
 
@@ -733,9 +734,9 @@ IBFEInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHiera
 
 void
 IBFEInstrumentPanel::initializeHierarchyDependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
-                                                    LDataManager* const l_data_manager,
-                                                    const int timestep_num,
-                                                    const double data_time)
+                                                      LDataManager* const l_data_manager,
+                                                      const int timestep_num,
+                                                      const double data_time)
 {
     if (!d_initialized)
     {
@@ -961,11 +962,11 @@ IBFEInstrumentPanel::initializeHierarchyDependentData(const Pointer<PatchHierarc
 
 void
 IBFEInstrumentPanel::readInstrumentData(const int U_data_idx,
-                                      const int P_data_idx,
-                                      const Pointer<PatchHierarchy<NDIM> > hierarchy,
-                                      LDataManager* const l_data_manager,
-                                      const int timestep_num,
-                                      const double data_time)
+                                        const int P_data_idx,
+                                        const Pointer<PatchHierarchy<NDIM> > hierarchy,
+                                        LDataManager* const l_data_manager,
+                                        const int timestep_num,
+                                        const double data_time)
 {
     if (d_num_meters == 0) return;
 
