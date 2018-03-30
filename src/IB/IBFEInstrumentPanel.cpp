@@ -1,5 +1,5 @@
-// Filename: IBInstrumentPanel.cpp
-// Created on 12 May 2007 by Boyce Griffith
+// Filename: IBFEInstrumentPanel.cpp
+// Created on 30 March 2018 by Charles Puelz
 //
 // Copyright (c) 2002-2017, Boyce Griffith
 // All rights reserved.
@@ -32,13 +32,13 @@
 
 /////////////////////////////// INCLUDES /////////////////////////////////////
 
-#include <math.h>
-#include <stddef.h>
-#include <stdio.h>
 #include <algorithm>
 #include <fstream>
 #include <limits>
 #include <map>
+#include <math.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -61,7 +61,7 @@
 #include "SideIndex.h"
 #include "boost/array.hpp"
 #include "boost/multi_array.hpp"
-#include "ibamr/IBInstrumentPanel.h"
+#include "ibamr/IBFEInstrumentPanel.h"
 #include "ibamr/IBInstrumentationSpec.h"
 #include "ibamr/ibamr_utilities.h"
 #include "ibamr/namespaces.h" // IWYU pragma: keep
@@ -267,7 +267,7 @@ build_meter_web(DBfile* dbfile,
     // Set the working directory in the Silo database.
     if (DBSetDir(dbfile, dirname.c_str()) == -1)
     {
-        TBOX_ERROR("IBInstrumentPanel::build_meter_web():\n"
+        TBOX_ERROR("IBFEInstrumentPanel::build_meter_web():\n"
                    << "  Could not set directory "
                    << dirname
                    << std::endl);
@@ -309,7 +309,7 @@ build_meter_web(DBfile* dbfile,
     // Reset the working directory in the Silo database.
     if (DBSetDir(dbfile, "..") == -1)
     {
-        TBOX_ERROR("IBInstrumentPanel::build_meter_web():\n"
+        TBOX_ERROR("IBFEInstrumentPanel::build_meter_web():\n"
                    << "  Could not return to the base directory from subdirectory "
                    << dirname
                    << std::endl);
@@ -512,7 +512,7 @@ linear_interp(const Point& X,
 
 /////////////////////////////// PUBLIC ///////////////////////////////////////
 
-IBInstrumentPanel::IBInstrumentPanel(const std::string& object_name, Pointer<Database> input_db)
+IBFEInstrumentPanel::IBFEInstrumentPanel(const std::string& object_name, Pointer<Database> input_db)
     : d_object_name(object_name),
       d_initialized(false),
       d_num_meters(0),
@@ -542,7 +542,7 @@ IBInstrumentPanel::IBInstrumentPanel(const std::string& object_name, Pointer<Dat
 #if defined(IBAMR_HAVE_SILO)
 // intentionally blank
 #else
-    TBOX_WARNING("IBInstrumentPanel::IBInstrumentPanel(): SILO is not installed; cannot write data." << std::endl);
+    TBOX_WARNING("IBFEInstrumentPanel::IBFEInstrumentPanel(): SILO is not installed; cannot write data." << std::endl);
 #endif
 
     // Initialize object with data read from the input database.
@@ -551,15 +551,15 @@ IBInstrumentPanel::IBInstrumentPanel(const std::string& object_name, Pointer<Dat
     // Setup Timers.
     IBAMR_DO_ONCE(
         t_initialize_hierarchy_independent_data =
-            TimerManager::getManager()->getTimer("IBAMR::IBInstrumentPanel::initializeHierarchyIndependentData()");
+            TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::initializeHierarchyIndependentData()");
         t_initialize_hierarchy_dependent_data =
-            TimerManager::getManager()->getTimer("IBAMR::IBInstrumentPanel::initializeHierarchyDependentData()");
-        t_read_instrument_data = TimerManager::getManager()->getTimer("IBAMR::IBInstrumentPanel::readInstrumentData()");
-        t_write_plot_data = TimerManager::getManager()->getTimer("IBAMR::IBInstrumentPanel::writePlotData()"););
+            TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::initializeHierarchyDependentData()");
+        t_read_instrument_data = TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::readInstrumentData()");
+        t_write_plot_data = TimerManager::getManager()->getTimer("IBAMR::IBFEInstrumentPanel::writePlotData()"););
     return;
-} // IBInstrumentPanel
+} // IBFEInstrumentPanel
 
-IBInstrumentPanel::~IBInstrumentPanel()
+IBFEInstrumentPanel::~IBFEInstrumentPanel()
 {
     // Close the log file stream.
     if (SAMRAI_MPI::getRank() == 0)
@@ -567,40 +567,40 @@ IBInstrumentPanel::~IBInstrumentPanel()
         d_log_file_stream.close();
     }
     return;
-} // ~IBInstrumentPanel
+} // ~IBFEInstrumentPanel
 
 const std::vector<std::string>&
-IBInstrumentPanel::getInstrumentNames() const
+IBFEInstrumentPanel::getInstrumentNames() const
 {
     return d_instrument_names;
 } // getInstrumentNames
 
 const double&
-IBInstrumentPanel::getInstrumentDataReadTime() const
+IBFEInstrumentPanel::getInstrumentDataReadTime() const
 {
     return d_instrument_read_time;
 } // getInstrumentDataReadTime
 
 const std::vector<double>&
-IBInstrumentPanel::getFlowValues() const
+IBFEInstrumentPanel::getFlowValues() const
 {
     return d_flow_values;
 } // getFlowValues
 
 const std::vector<double>&
-IBInstrumentPanel::getMeanPressureValues() const
+IBFEInstrumentPanel::getMeanPressureValues() const
 {
     return d_mean_pres_values;
 } // getMeanPressureValues
 
 const std::vector<double>&
-IBInstrumentPanel::getPointwisePressureValues() const
+IBFEInstrumentPanel::getPointwisePressureValues() const
 {
     return d_point_pres_values;
 } // getPointwisePressureValues
 
 bool
-IBInstrumentPanel::isInstrumented() const
+IBFEInstrumentPanel::isInstrumented() const
 {
     if (!d_initialized)
     {
@@ -613,7 +613,7 @@ IBInstrumentPanel::isInstrumented() const
 } // isInstrumented
 
 void
-IBInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
+IBFEInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
                                                       LDataManager* const l_data_manager)
 {
     IBAMR_TIMER_START(t_initialize_hierarchy_independent_data);
@@ -732,7 +732,7 @@ IBInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHierarc
 } // initializeHierarchyIndependentData
 
 void
-IBInstrumentPanel::initializeHierarchyDependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
+IBFEInstrumentPanel::initializeHierarchyDependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
                                                     LDataManager* const l_data_manager,
                                                     const int timestep_num,
                                                     const double data_time)
@@ -960,7 +960,7 @@ IBInstrumentPanel::initializeHierarchyDependentData(const Pointer<PatchHierarchy
 } // initializeHierarchyDependentData
 
 void
-IBInstrumentPanel::readInstrumentData(const int U_data_idx,
+IBFEInstrumentPanel::readInstrumentData(const int U_data_idx,
                                       const int P_data_idx,
                                       const Pointer<PatchHierarchy<NDIM> > hierarchy,
                                       LDataManager* const l_data_manager,
@@ -1225,14 +1225,14 @@ IBInstrumentPanel::readInstrumentData(const int U_data_idx,
 } // readInstrumentData
 
 void
-IBInstrumentPanel::setPlotDirectory(const std::string& plot_directory_name)
+IBFEInstrumentPanel::setPlotDirectory(const std::string& plot_directory_name)
 {
     d_plot_directory_name = plot_directory_name;
     return;
 } // setPlotDirectory
 
 void
-IBInstrumentPanel::writePlotData(const int timestep_num, const double simulation_time)
+IBFEInstrumentPanel::writePlotData(const int timestep_num, const double simulation_time)
 {
     if (d_num_meters == 0) return;
 
@@ -1387,7 +1387,7 @@ IBInstrumentPanel::writePlotData(const int timestep_num, const double simulation
         }
     }
 #else
-    TBOX_WARNING("IBInstrumentPanel::writePlotData(): SILO is not installed; cannot write data." << std::endl);
+    TBOX_WARNING("IBFEInstrumentPanel::writePlotData(): SILO is not installed; cannot write data." << std::endl);
 #endif // if defined(IBAMR_HAVE_SILO)
     IBAMR_TIMER_STOP(t_write_plot_data);
     return;
@@ -1398,7 +1398,7 @@ IBInstrumentPanel::writePlotData(const int timestep_num, const double simulation
 /////////////////////////////// PRIVATE //////////////////////////////////////
 
 void
-IBInstrumentPanel::getFromInput(Pointer<Database> db)
+IBFEInstrumentPanel::getFromInput(Pointer<Database> db)
 {
 #if !defined(NDEBUG)
     TBOX_ASSERT(db);
@@ -1417,7 +1417,7 @@ IBInstrumentPanel::getFromInput(Pointer<Database> db)
 } // getFromInput
 
 void
-IBInstrumentPanel::outputLogData(std::ostream& os)
+IBFEInstrumentPanel::outputLogData(std::ostream& os)
 {
     for (unsigned int m = 0; m < d_num_meters; ++m)
     {
