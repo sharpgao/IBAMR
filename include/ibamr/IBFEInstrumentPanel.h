@@ -1,4 +1,4 @@
-// Filename: IBInstrumentPanel.h
+// Filename: IBFEInstrumentPanel.h
 // Created on 12 May 2007 by Boyce Griffith
 //
 // Copyright (c) 2002-2017, Boyce Griffith
@@ -70,23 +70,23 @@ class Database;
 namespace IBAMR
 {
 /*!
- * \brief Class IBInstrumentPanel provides support for flow meters and pressure
+ * \brief Class IBFEInstrumentPanel provides support for flow meters and pressure
  * gauges.
  *
- * \note Use of class IBInstrumentPanel requires the Blitz++ array library.
+ * \note Use of class IBFEInstrumentPanel requires the Blitz++ array library.
  */
-class IBInstrumentPanel : public virtual SAMRAI::tbox::DescribedClass
+class IBFEInstrumentPanel : public virtual SAMRAI::tbox::DescribedClass
 {
 public:
     /*!
      * \brief Constructor.
      */
-    IBInstrumentPanel(const std::string& object_name, SAMRAI::tbox::Pointer<SAMRAI::tbox::Database> input_db);
+    IBFEInstrumentPanel(const std::string& object_name, SAMRAI::tbox::Pointer<SAMRAI::tbox::Database> input_db);
 
     /*!
      * \brief Destructor.
      */
-    ~IBInstrumentPanel();
+    ~IBFEInstrumentPanel();
 
     /*!
      * \return A const reference to the vector of instrument names.
@@ -183,7 +183,7 @@ private:
      *
      * \note This constructor is not implemented and should not be used.
      */
-    IBInstrumentPanel();
+    IBFEInstrumentPanel();
 
     /*!
      * \brief Copy constructor.
@@ -192,7 +192,7 @@ private:
      *
      * \param from The value to copy to this object.
      */
-    IBInstrumentPanel(const IBInstrumentPanel& from);
+    IBFEInstrumentPanel(const IBFEInstrumentPanel& from);
 
     /*!
      * \brief Assignment operator.
@@ -203,7 +203,7 @@ private:
      *
      * \return A reference to this object.
      */
-    IBInstrumentPanel& operator=(const IBInstrumentPanel& that);
+    IBFEInstrumentPanel& operator=(const IBFEInstrumentPanel& that);
 
     /*!
      * Read input values, indicated above, from given database.
@@ -228,9 +228,10 @@ private:
     bool d_initialized;
     unsigned int d_num_meters;
     std::vector<int> d_num_perimeter_nodes;
-    std::vector<IBTK::Vector> d_X_centroid;
-    std::vector<boost::multi_array<IBTK::Vector, 1> > d_X_perimeter;
-    std::vector<boost::multi_array<IBTK::Vector, 2> > d_X_web, d_dA_web;
+    std::vector<std::vector<libMesh::Point> > d_X_centroid;
+    std::vector<std::vector<libMesh::Point> > d_X_perimeter;
+    std::vector<std::vector<libMesh::dof_id_type> > d_X_perimeter_ids;
+    std::vector<> d_X_web, d_dA_web;
 
     int d_instrument_read_timestep_num;
     double d_instrument_read_time;

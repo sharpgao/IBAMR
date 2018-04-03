@@ -83,6 +83,12 @@
 #include "tbox/TimerManager.h"
 #include "tbox/Utilities.h"
 
+// cpuelz includes
+#include "ibtk/FEDataManager.h"
+#include "libmesh/boundary_info.h"
+#include "libmesh/equation_systems.h"
+#include "libmesh/mesh.h"
+
 #if defined(IBAMR_HAVE_SILO)
 #include <silo.h>
 #endif
@@ -614,49 +620,42 @@ IBFEInstrumentPanel::isInstrumented() const
 } // isInstrumented
 
 void
-IBFEInstrumentPanel::initializeHierarchyIndependentData(const Pointer<PatchHierarchy<NDIM> > hierarchy,
-                                                        LDataManager* const l_data_manager)
+IBFEInstrumentPanel::initializeHierarchyIndependentData(FEDataManager* const fe_data_manager)
 {
     IBAMR_TIMER_START(t_initialize_hierarchy_independent_data);
 
-    const int coarsest_ln = 0;
-    const int finest_ln = hierarchy->getFinestLevelNumber();
+    const EquationSystems* es = fe_data_manager->getEquationSystems();
+    const Mesh* mesh = es->get_mesh();
+    const BoundaryInfo* boundary_info = mesh->boundary_info;
+    std::vector<boundary_id_type> unique_node_boundary_ids;
+    std::vector<boundary_id_type> boundary_ids;
+    std::vector<dof_id_type> node_ids;
+    boundary_info->build_node_boundary_ids(unique_node_boundary_ids);
 
-    // Determine how many flow meters/pressure gauges are present in the local
-    // data.
-    int max_meter_index = -1;
-    std::vector<int> max_node_index;
-    for (int ln = coarsest_ln; ln <= finest_ln; ++ln)
+    d_num_meters = unique_node_boundary_ids.size();
+    d_X_centroid.resize(d_num_meters);
+    d_X_perimeter.resize(d_num_meters);
+    d_num_perimeter_nodes.clear();
+    d_num_perimeter_nodes.resize(d_num_meters, -1);
+
+    for (int ii = 0; ii < node_ids.size(); ++ii)
     {
-        if (l_data_manager->levelContainsLagrangianData(ln))
+        for (int m = 0; m < d_num_meters; ++m)
         {
-            const Pointer<LMesh> mesh = l_data_manager->getLMesh(ln);
-            const std::vector<LNode*>& local_nodes = mesh->getLocalNodes();
-            for (std::vector<LNode*>::const_iterator cit = local_nodes.begin(); cit != local_nodes.end(); ++cit)
+            if (unique_node_boundary_ids[m] == boundary_ids[ii])
             {
-                const LNode* const node_idx = *cit;
-                const IBInstrumentationSpec* const spec = node_idx->getNodeDataItem<IBInstrumentationSpec>();
-                if (spec)
-                {
-                    const int m = spec->getMeterIndex();
-                    max_meter_index = std::max(m, max_meter_index);
-
-                    const int n = spec->getNodeIndex();
-                    max_node_index.resize(max_meter_index + 1, -1);
-                    max_node_index[m] = std::max(n, max_node_index[m]);
-                }
+                d_X_perimeter_ids[m].push_back(node_ids[ii]);
+                Node* node = &mesh.node_ref(node_ids[ii]);
+                d_X_perimeter[m].push_back(*node);
+                d_X_centroid[m] += *node;
             }
         }
     }
 
-    // Communicate local data to all processes.
-    d_num_meters = SAMRAI_MPI::maxReduction(max_meter_index) + 1;
-    max_node_index.resize(d_num_meters, -1);
-    d_num_perimeter_nodes.clear();
-    d_num_perimeter_nodes.resize(d_num_meters, -1);
     for (unsigned int m = 0; m < d_num_meters; ++m)
     {
-        d_num_perimeter_nodes[m] = max_node_index[m] + 1;
+        d_num_perimeter_nodes[m] = d_X_perimeter[m].size();
+        d_X_centroid[m] /= d_num_perimeter_nodes[m];
     }
     SAMRAI_MPI::maxReduction(d_num_meters > 0 ? &d_num_perimeter_nodes[0] : NULL, d_num_meters);
 #if !defined(NDEBUG)
