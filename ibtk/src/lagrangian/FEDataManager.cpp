@@ -1196,14 +1196,12 @@ FEDataManager::interpWeighted(const int f_data_idx,
 
 void
 FEDataManager::readData(const int f_data_idx,
-                        NumericVector<double>& F_vec,
+                        DenseVector<double>& MeanData,
                         NumericVector<double>& X_vec,
-                        const std::string& system_name,
                         const FEDataManager::InterpSpec& interp_spec,
                         const std::vector<Pointer<RefineSchedule<NDIM> > >& f_refine_scheds,
                         const double fill_data_time)
 {
-    IBTK_TIMER_START(t_interp_weighted);
 
     VariableDatabase<NDIM>* var_db = VariableDatabase<NDIM>::getDatabase();
 
@@ -1222,28 +1220,17 @@ FEDataManager::readData(const int f_data_idx,
     UniquePtr<QBase> qrule;
 
     // Extract the FE systems and DOF maps, and setup the FE object.
-    System& F_system = d_es->get_system(system_name);
-    const unsigned int n_vars = F_system.n_vars();
-    const DofMap& F_dof_map = F_system.get_dof_map();
-    SystemDofMapCache& F_dof_map_cache = *getDofMapCache(system_name);
+    const unsigned int n_vars = cc_data ? 1 : NDIM;
+    MeanData.resize(n_vars);
     System& X_system = d_es->get_system(COORDINATES_SYSTEM_NAME);
     const DofMap& X_dof_map = X_system.get_dof_map();
     SystemDofMapCache& X_dof_map_cache = *getDofMapCache(COORDINATES_SYSTEM_NAME);
-    std::vector<std::vector<unsigned int> > F_dof_indices(n_vars);
     std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
-    FEType F_fe_type = F_dof_map.variable_type(0);
-    for (unsigned i = 0; i < n_vars; ++i) TBOX_ASSERT(F_dof_map.variable_type(i) == F_fe_type);
     FEType X_fe_type = X_dof_map.variable_type(0);
     for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
-    UniquePtr<FEBase> F_fe_autoptr(FEBase::build(dim, F_fe_type)), X_fe_autoptr;
-    if (F_fe_type != X_fe_type)
-    {
-        X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
-    }
-    FEBase* F_fe = F_fe_autoptr.get();
-    FEBase* X_fe = X_fe_autoptr.get() ? X_fe_autoptr.get() : F_fe_autoptr.get();
-    const std::vector<double>& JxW_F = F_fe->get_JxW();
-    const std::vector<std::vector<double> >& phi_F = F_fe->get_phi();
+    UniquePtr<FEBase> X_fe_autoptr;
+    X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
+    FEBase* X_fe = X_fe_autoptr.get();
     const std::vector<std::vector<double> >& phi_X = X_fe->get_phi();
 
     // Communicate any unsynchronized ghost data and extract the underlying
@@ -1264,8 +1251,6 @@ FEDataManager::readData(const int f_data_idx,
     // Loop over the patches to interpolate values to the element quadrature
     // points from the grid, then use these values to compute the projection of
     // the interpolated velocity field onto the FE basis functions.
-    F_vec.zero();
-    std::vector<DenseVector<double> > F_rhs_e(n_vars);
     boost::multi_array<double, 2> X_node;
     std::vector<double> F_qp, X_qp;
 
@@ -1350,7 +1335,6 @@ FEDataManager::readData(const int f_data_idx,
         // are within the patch interior.
         const Box<NDIM>& interp_box = patch->getBox();
         Pointer<PatchData<NDIM> > f_data = patch->getPatchData(f_data_idx);
-
         if (cc_data)
         {
             Pointer<CellData<NDIM, double> > f_cc_data = f_data;
@@ -1365,14 +1349,10 @@ FEDataManager::readData(const int f_data_idx,
         // Loop over the elements and accumulate the right-hand-side values.
         qrule.reset();
         qp_offset = 0;
+        int total_qp = 0;
         for (unsigned int e_idx = 0; e_idx < num_active_patch_elems; ++e_idx)
         {
             Elem* const elem = patch_elems[e_idx];
-            for (unsigned int i = 0; i < n_vars; ++i)
-            {
-                F_dof_map_cache.dof_indices(elem, F_dof_indices[i], i);
-                F_rhs_e[i].resize(static_cast<int>(F_dof_indices[i].size()));
-            }
             for (unsigned int d = 0; d < NDIM; ++d)
             {
                 X_dof_map_cache.dof_indices(elem, X_dof_indices[d], d);
@@ -1387,39 +1367,29 @@ FEDataManager::readData(const int f_data_idx,
                 // notice that the shape function values depend only on the
                 // element type and quadrature rule, not on the element
                 // geometry.
-                F_fe->attach_quadrature_rule(qrule.get());
                 X_fe->attach_quadrature_rule(qrule.get());
-                if (X_fe != F_fe) X_fe->reinit(elem);
+                X_fe->reinit(elem);
             }
-            F_fe->reinit(elem);
             const unsigned int n_qp = qrule->n_points();
-            const size_t n_basis = F_dof_indices[0].size();
             for (unsigned int qp = 0; qp < n_qp; ++qp)
             {
                 const int idx = n_vars * (qp_offset + qp);
-                for (unsigned int k = 0; k < n_basis; ++k)
+                for (unsigned int i = 0; i < n_vars; ++i)
                 {
-                    const double p_JxW_F = phi_F[k][qp] * JxW_F[qp];
-                    for (unsigned int i = 0; i < n_vars; ++i)
-                    {
-                        F_rhs_e[i](k) += F_qp[idx + i] * p_JxW_F;
-                    }
+                    MeanData(i) += F_qp[idx + i];
                 }
-            }
-            for (unsigned int i = 0; i < n_vars; ++i)
-            {
-                F_dof_map.constrain_element_vector(F_rhs_e[i], F_dof_indices[i]);
-                F_vec.add_vector(F_rhs_e[i], F_dof_indices[i]);
+                total_qp += 1;
+            
             }
             qp_offset += n_qp;
         }
+        MeanData *= 1.0/static_cast<double>(total_qp);
+        
     }
-    F_vec.close();
 
     VecRestoreArray(X_local_vec, &X_local_soln);
     VecGhostRestoreLocalForm(X_global_vec, &X_local_vec);
 
-    IBTK_TIMER_STOP(t_interp_weighted);
     return;
 } // readData
 
