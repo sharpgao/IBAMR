@@ -406,6 +406,15 @@ public:
                      bool is_density = true,
                      bool accumulate_on_grid = true);
 
+    void readData(int f_data_idx,
+                   libMesh::NumericVector<double>& F,
+                   libMesh::NumericVector<double>& X,
+                   const std::string& system_name,
+                   const InterpSpec& interp_spec,
+                   const std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >& f_refine_scheds =
+                       std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >(),
+                   double fill_data_time = 0.0);
+    
     /*!
      * \brief Interpolate a value from the Cartesian grid to the FE mesh using
      * the default interpolation spec. This interpolation function does NOT do
