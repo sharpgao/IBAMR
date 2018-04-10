@@ -1221,6 +1221,7 @@ FEDataManager::readPressureData(const int f_data_idx,
 
     // Extract the FE systems and DOF maps, and setup the FE object.
     const unsigned int n_vars = 1;
+    MeanPressureData = 0.0;
     System& X_system = d_es->get_system(COORDINATES_SYSTEM_NAME);
     const DofMap& X_dof_map = X_system.get_dof_map();
     SystemDofMapCache& X_dof_map_cache = *getDofMapCache(COORDINATES_SYSTEM_NAME);
@@ -1421,6 +1422,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
     // Extract the FE systems and DOF maps, and setup the FE object.
     const unsigned int n_vars = NDIM;
     MeanVelocityData.resize(n_vars);
+    FluxData = 0.0;
     System& X_system = d_es->get_system(COORDINATES_SYSTEM_NAME);
     const DofMap& X_dof_map = X_system.get_dof_map();
     SystemDofMapCache& X_dof_map_cache = *getDofMapCache(COORDINATES_SYSTEM_NAME);
@@ -1584,7 +1586,8 @@ FEDataManager::readVelocityData(const int f_data_idx,
                 for (unsigned int i = 0; i < n_vars; ++i)
                 {
                     MeanVelocityData(i) += F_qp[idx + i];
-                    FluxData += F_qp[idx + i] * normal(i) * JxW;
+                    //FluxData += F_qp[idx + i] * normal(i) * JxW;
+                    FluxData += JxW;
                 }
                 total_qp += 1;
             
