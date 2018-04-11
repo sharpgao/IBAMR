@@ -1370,6 +1370,7 @@ FEDataManager::readPressureData(const int f_data_idx,
                 X_fe->attach_quadrature_rule(qrule.get());
                 X_fe->reinit(elem);
             }
+            X_fe->reinit(elem);
             const unsigned int n_qp = qrule->n_points();
             for (unsigned int qp = 0; qp < n_qp; ++qp)
             {
