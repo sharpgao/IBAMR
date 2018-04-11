@@ -974,6 +974,7 @@ IBFEMethod::initializeFEEquationSystems()
         EquationSystems* equation_systems = d_equation_systems[part];
         d_fe_data_managers[part]->setEquationSystems(equation_systems, d_max_level_number - 1);
         d_fe_data_managers[part]->COORDINATES_SYSTEM_NAME = COORDS_SYSTEM_NAME;
+        d_fe_data_managers[part]->VELOCITY_SYSTEM_NAME = VELOCITY_SYSTEM_NAME;
         if (from_restart)
         {
             const std::string& file_name = libmesh_restart_file_name(

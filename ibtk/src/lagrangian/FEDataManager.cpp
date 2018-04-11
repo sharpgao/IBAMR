@@ -1399,6 +1399,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
                                 double& FluxData,
                                 libMesh::DenseVector<double>& MeanVelocityData,
                                 NumericVector<double>& X_vec,
+                                NumericVector<double>& U_vec,
                                 const FEDataManager::InterpSpec& interp_spec,
                                 const std::vector<Pointer<RefineSchedule<NDIM> > >& f_refine_scheds,
                                 const double fill_data_time)
@@ -1462,11 +1463,20 @@ FEDataManager::readVelocityData(const int f_data_idx,
     VecGhostGetLocalForm(X_global_vec, &X_local_vec);
     double* X_local_soln;
     VecGetArray(X_local_vec, &X_local_soln);
+    
+     /*if (!U_vec.closed())*/ U_vec.close();
+    PetscVector<double>* U_petsc_vec = static_cast<PetscVector<double>*>(&U_vec);
+    Vec U_global_vec = U_petsc_vec->vec();
+    Vec U_local_vec;
+    VecGhostGetLocalForm(U_global_vec, &U_local_vec);
+    double* U_local_soln;
+    VecGetArray(U_local_vec, &U_local_soln);
 
     // Loop over the patches to interpolate values to the element quadrature
     // points from the grid, then use these values to compute the projection of
     // the interpolated velocity field onto the FE basis functions.
     boost::multi_array<double, 2> X_node;
+    boost::multi_array<double, 2> U_node;
     std::vector<double> F_qp, X_qp;
 
     Pointer<PatchLevel<NDIM> > level = d_hierarchy->getPatchLevel(d_level_number);
@@ -1577,8 +1587,10 @@ FEDataManager::readVelocityData(const int f_data_idx,
             for (unsigned int d = 0; d < NDIM; ++d)
             {
                 X_dof_map_cache.dof_indices(elem, X_dof_indices[d], d);
+                U_dof_map_cache.dof_indices(elem, U_dof_indices[d], d);
             }
             get_values_for_interpolation(X_node, *X_petsc_vec, X_local_soln, X_dof_indices);
+            get_values_for_interpolation(U_node, *U_petsc_vec, U_local_soln, U_dof_indices);
             const bool qrule_changed = updateInterpQuadratureRule(qrule, interp_spec, elem, X_node, patch_dx_min);
             if (qrule_changed)
             {
@@ -1593,25 +1605,32 @@ FEDataManager::readVelocityData(const int f_data_idx,
             }
             X_fe->reinit(elem);
             U_fe->reinit(elem);
-            const size_t n_basis = U_dof_indices[0].size();
+            const size_t n_nodes = U_dof_indices[0].size();
             const unsigned int n_qp = qrule->n_points();
             for (unsigned int qp = 0; qp < n_qp; ++qp)
             {
                 const int idx = n_vars * (qp_offset + qp);
+                // compute mean velocity over all quadrature nodes, and
+                // compute the contribution to the mass flux from the 
+                // Cartesian velocity field interpolated to the quadrature 
+                // nodes.
                 for (unsigned int i = 0; i < n_vars; ++i)
                 {
                     MeanVelocityData(i) += F_qp[idx + i];
                     FluxData += F_qp[idx + i] * foo3_normal(i) * JxW_X[qp];
-                }
-                
-                // compute flow correction
-                for (unsigned int k = 0; k < n_basis; ++k)
-                {
-                    FluxData -= 0.0 * phi_U[k][qp] * JxW_U[qp];
+                    
+                    // compute flow correction by subtracting off the component
+                    // of the flux that's attributed to the movement of the 
+                    // mesh part.
+                    for (unsigned int k = 0; k < n_nodes; ++k)
+                    {
+                        FluxData -= U_node[k][i] * phi_U[k][qp] * JxW_U[qp];
+                    }
                 }
                 total_qp += 1;
             }
             qp_offset += n_qp;
+                   
         }
         MeanVelocityData *= 1.0/static_cast<double>(total_qp);
         

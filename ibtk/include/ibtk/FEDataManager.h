@@ -419,6 +419,7 @@ public:
                           double& FluxData,
                           libMesh::DenseVector<double>& MeanVelocityData,
                           libMesh::NumericVector<double>& X,
+                          libMesh::NumericVector<double>& U,
                           const InterpSpec& interp_spec,
                           const std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >& f_refine_scheds =
                           std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >(),
