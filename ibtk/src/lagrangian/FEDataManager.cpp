@@ -1559,7 +1559,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
             const libMesh::Point foo1 = *elem->node_ptr(1) - *elem->node_ptr(0);
             const libMesh::Point foo2 = *elem->node_ptr(2) - *elem->node_ptr(1);
             libMesh::Point foo3(foo1.cross(foo2));
-            const libMesh::Point normal = foo3.unit();
+            const libMesh::Point foo3_normal = foo3.unit();
             
             for (unsigned int d = 0; d < NDIM; ++d)
             {
@@ -1578,6 +1578,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
                 X_fe->attach_quadrature_rule(qrule.get());
                 X_fe->reinit(elem);
             }
+            X_fe->reinit(elem);
             const unsigned int n_qp = qrule->n_points();
             for (unsigned int qp = 0; qp < n_qp; ++qp)
             {
@@ -1586,8 +1587,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
                 for (unsigned int i = 0; i < n_vars; ++i)
                 {
                     MeanVelocityData(i) += F_qp[idx + i];
-                    //FluxData += F_qp[idx + i] * normal(i) * JxW;
-                    FluxData += JxW;
+                    FluxData += F_qp[idx + i] * foo3_normal(i) * JxW;
                 }
                 total_qp += 1;
             
