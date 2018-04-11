@@ -211,6 +211,7 @@ public:
      * \note The default value for this string is "coordinates system".
      */
     std::string COORDINATES_SYSTEM_NAME;
+    std::string VELOCITY_SYSTEM_NAME;
 
     /*!
      * \brief The libMesh boundary IDs to use for specifying essential boundary

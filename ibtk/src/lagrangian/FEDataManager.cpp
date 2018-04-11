@@ -1424,17 +1424,29 @@ FEDataManager::readVelocityData(const int f_data_idx,
     const unsigned int n_vars = NDIM;
     MeanVelocityData.resize(n_vars);
     FluxData = 0.0;
+    System& U_system = d_es->get_system(VELOCITY_SYSTEM_NAME);
+    const DofMap& U_dof_map = U_system.get_dof_map();
+    SystemDofMapCache& U_dof_map_cache = *getDofMapCache(VELOCITY_SYSTEM_NAME);
     System& X_system = d_es->get_system(COORDINATES_SYSTEM_NAME);
     const DofMap& X_dof_map = X_system.get_dof_map();
     SystemDofMapCache& X_dof_map_cache = *getDofMapCache(COORDINATES_SYSTEM_NAME);
+    std::vector<std::vector<unsigned int> > U_dof_indices(n_vars);
     std::vector<std::vector<unsigned int> > X_dof_indices(NDIM);
+    FEType U_fe_type = U_dof_map.variable_type(0);
+    for (unsigned i = 0; i < n_vars; ++i) TBOX_ASSERT(U_dof_map.variable_type(i) == U_fe_type);
     FEType X_fe_type = X_dof_map.variable_type(0);
     for (unsigned d = 0; d < NDIM; ++d) TBOX_ASSERT(X_dof_map.variable_type(d) == X_fe_type);
-    UniquePtr<FEBase> X_fe_autoptr;
-    X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
-    FEBase* X_fe = X_fe_autoptr.get();
-    const std::vector<std::vector<double> >& phi_X = X_fe->get_phi();
+    UniquePtr<FEBase> U_fe_autoptr(FEBase::build(dim, U_fe_type)), X_fe_autoptr;
+    if (U_fe_type != X_fe_type)
+    {
+        X_fe_autoptr = UniquePtr<FEBase>(FEBase::build(dim, X_fe_type));
+    }
+    FEBase* U_fe = U_fe_autoptr.get();
+    FEBase* X_fe = X_fe_autoptr.get() ? X_fe_autoptr.get() : U_fe_autoptr.get();
+    const std::vector<double>& JxW_U = U_fe->get_JxW();
     const std::vector<double>& JxW_X = X_fe->get_JxW();
+    const std::vector<std::vector<double> >& phi_U = U_fe->get_phi();
+    const std::vector<std::vector<double> >& phi_X = X_fe->get_phi();
         
     // Communicate any unsynchronized ghost data and extract the underlying
     // solution data.
@@ -1580,18 +1592,24 @@ FEDataManager::readVelocityData(const int f_data_idx,
                 X_fe->reinit(elem);
             }
             X_fe->reinit(elem);
+            U_fe->reinit(elem);
+            const size_t n_basis = U_dof_indices[0].size();
             const unsigned int n_qp = qrule->n_points();
             for (unsigned int qp = 0; qp < n_qp; ++qp)
             {
                 const int idx = n_vars * (qp_offset + qp);
-                const double JxW = JxW_X[qp];
                 for (unsigned int i = 0; i < n_vars; ++i)
                 {
                     MeanVelocityData(i) += F_qp[idx + i];
-                    FluxData += F_qp[idx + i] * foo3_normal(i) * JxW;
+                    FluxData += F_qp[idx + i] * foo3_normal(i) * JxW_X[qp];
+                }
+                
+                // compute flow correction
+                for (unsigned int k = 0; k < n_basis; ++k)
+                {
+                    FluxData -= 0.0 * phi_U[k][qp] * JxW_U[qp];
                 }
                 total_qp += 1;
-            
             }
             qp_offset += n_qp;
         }
@@ -2471,6 +2489,7 @@ FEDataManager::FEDataManager(const std::string& object_name,
                              const IntVector<NDIM>& ghost_width,
                              bool register_for_restart)
     : COORDINATES_SYSTEM_NAME("coordinates system"),
+      VELOCITY_SYSTEM_NAME("velocity system"),  
       d_object_name(object_name),
       d_registered_for_restart(register_for_restart),
       d_load_balancer(NULL),
