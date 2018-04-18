@@ -1624,7 +1624,7 @@ FEDataManager::readVelocityData(const int f_data_idx,
                     // mesh part.
                     for (unsigned int k = 0; k < n_nodes; ++k)
                     {
-                        FluxData -= U_node[k][i] * phi_U[k][qp] * JxW_U[qp];
+                        FluxData -= U_node[k][i] * phi_U[k][qp] * foo3_normal(i) * JxW_U[qp];
                     }
                 }
                 total_qp += 1;
