@@ -211,7 +211,6 @@ public:
      * \note The default value for this string is "coordinates system".
      */
     std::string COORDINATES_SYSTEM_NAME;
-    std::string VELOCITY_SYSTEM_NAME;
 
     /*!
      * \brief The libMesh boundary IDs to use for specifying essential boundary
@@ -407,24 +406,6 @@ public:
                      bool is_density = true,
                      bool accumulate_on_grid = true);
 
-    void readPressureData(int f_data_idx,
-                          double& MeanPressureData,
-                          libMesh::NumericVector<double>& X,
-                          const InterpSpec& interp_spec,
-                          const std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >& f_refine_scheds =
-                          std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >(),
-                          double fill_data_time = 0.0);
-    
-    void readVelocityData(int f_data_idx,
-                          double& FluxData,
-                          libMesh::DenseVector<double>& MeanVelocityData,
-                          libMesh::NumericVector<double>& X,
-                          libMesh::NumericVector<double>& U,
-                          const InterpSpec& interp_spec,
-                          const std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >& f_refine_scheds =
-                          std::vector<SAMRAI::tbox::Pointer<SAMRAI::xfer::RefineSchedule<NDIM> > >(),
-                          double fill_data_time = 0.0);
-    
     /*!
      * \brief Interpolate a value from the Cartesian grid to the FE mesh using
      * the default interpolation spec. This interpolation function does NOT do

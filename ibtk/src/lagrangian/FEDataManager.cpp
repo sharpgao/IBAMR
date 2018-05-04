@@ -2060,7 +2060,6 @@ FEDataManager::FEDataManager(const std::string& object_name,
                              const IntVector<NDIM>& ghost_width,
                              bool register_for_restart)
     : COORDINATES_SYSTEM_NAME("coordinates system"),
-      VELOCITY_SYSTEM_NAME("velocity system"),  
       d_object_name(object_name),
       d_registered_for_restart(register_for_restart),
       d_load_balancer(NULL),
