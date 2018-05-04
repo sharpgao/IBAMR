@@ -26,7 +26,6 @@
 #include "CellIndex.h"
 #include "Eigen/Geometry" // IWYU pragma: keep
 #include "IBAMR_config.h"
-#include "ibamr/IBFEInstrumentPanel.h"
 #include "Index.h"
 #include "IntVector.h"
 #include "Patch.h"
@@ -36,6 +35,7 @@
 #include "SideIndex.h"
 #include "boost/array.hpp"
 #include "boost/multi_array.hpp"
+#include "ibamr/IBFEInstrumentPanel.h"
 #include "ibamr/ibamr_utilities.h"
 #include "ibamr/namespaces.h" // IWYU pragma: keep
 #include "ibtk/IBTK_CHKERRQ.h"
