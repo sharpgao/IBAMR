@@ -26,7 +26,7 @@
 #include "CellIndex.h"
 #include "Eigen/Geometry" // IWYU pragma: keep
 #include "IBAMR_config.h"
-#include "IBFEInstrumentPanel.h"
+#include "ibamr/IBFEInstrumentPanel.h"
 #include "Index.h"
 #include "IntVector.h"
 #include "Patch.h"

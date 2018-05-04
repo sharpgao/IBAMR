@@ -65,7 +65,6 @@ DIM_INDEPENDENT_SOURCES = \
 ../src/IB/IBImplicitStaggeredHierarchyIntegrator.cpp \
 ../src/IB/IBImplicitStrategy.cpp \
 ../src/IB/IBInstrumentPanel.cpp \
-../src/IB/IBFEInstrumentPanel.cpp \
 ../src/IB/IBInstrumentationSpec.cpp \
 ../src/IB/IBInstrumentationSpecFactory.cpp \
 ../src/IB/IBKirchhoffRodForceGen.cpp \
@@ -151,6 +150,7 @@ if LIBMESH_ENABLED
   ../src/IB/CIBFEMethod.cpp \
   ../src/IB/IBFECentroidPostProcessor.cpp \
   ../src/IB/IBFEMethod.cpp \
+  ../src/IB/IBFEInstrumentPanel.cpp \
   ../src/IB/IBFEPostProcessor.cpp \
   ../src/IB/IMPMethod.cpp \
   ../src/IB/IMPInitializer.cpp \
@@ -191,7 +191,6 @@ pkg_include_HEADERS += \
 ../include/ibamr/IBImplicitStaggeredHierarchyIntegrator.h \
 ../include/ibamr/IBImplicitStrategy.h \
 ../include/ibamr/IBInstrumentPanel.h \
-../include/ibamr/IBFEInstrumentPanel.h \
 ../include/ibamr/IBInstrumentationSpec.h \
 ../include/ibamr/IBKirchhoffRodForceGen.h \
 ../include/ibamr/IBLagrangianForceStrategy.h \
@@ -260,6 +259,7 @@ if LIBMESH_ENABLED
   ../include/ibamr/CIBFEMethod.h \
   ../include/ibamr/IBFECentroidPostProcessor.h \
   ../include/ibamr/IBFEMethod.h \
+  ../include/ibamr/IBFEInstrumentPanel.h \
   ../include/ibamr/IBFEPatchRecoveryPostProcessor.h \
   ../include/ibamr/IBFEPostProcessor.h \
   ../include/ibamr/IMPInitializer.h \
