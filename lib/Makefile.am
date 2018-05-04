@@ -65,6 +65,7 @@ DIM_INDEPENDENT_SOURCES = \
 ../src/IB/IBImplicitStaggeredHierarchyIntegrator.cpp \
 ../src/IB/IBImplicitStrategy.cpp \
 ../src/IB/IBInstrumentPanel.cpp \
+../src/IB/IBFEInstrumentPanel.cpp \
 ../src/IB/IBInstrumentationSpec.cpp \
 ../src/IB/IBInstrumentationSpecFactory.cpp \
 ../src/IB/IBKirchhoffRodForceGen.cpp \
@@ -190,6 +191,7 @@ pkg_include_HEADERS += \
 ../include/ibamr/IBImplicitStaggeredHierarchyIntegrator.h \
 ../include/ibamr/IBImplicitStrategy.h \
 ../include/ibamr/IBInstrumentPanel.h \
+../include/ibamr/IBFEInstrumentPanel.h \
 ../include/ibamr/IBInstrumentationSpec.h \
 ../include/ibamr/IBKirchhoffRodForceGen.h \
 ../include/ibamr/IBLagrangianForceStrategy.h \
