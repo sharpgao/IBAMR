@@ -365,6 +365,9 @@ IBFEInstrumentPanel::initializeHierarchyIndependentData(IBAMR::IBFEMethod* ib_me
     std::vector<libMesh::Point> meter_centroids;
     boundary_info.build_node_list(nodes, bcs);
 
+    // check to make sure there are node sets to work with
+    TBOX_ASSERT(nodes.size() > 0 && bcs.size() > 0);
+    
     // resize members and local variables
     d_num_meters = d_nodeset_IDs_for_meters.size();
     d_num_quad_points.resize(d_num_meters);
