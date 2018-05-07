@@ -366,10 +366,10 @@ IBFEInstrumentPanel::initializeHierarchyIndependentData(IBAMR::IBFEMethod* ib_me
     boundary_info.build_node_list(nodes, bcs);
 
     // check to make sure there are node sets to work with
-    if (nodes.size() == 0 || bcs.size() == 0 || nodes.size() != bcs.size())
+    if (nodes.size() == 0 || bcs.size() == 0 || (nodes.size() != bcs.size()))
     {
         TBOX_ERROR("IBFEInstrumentPanel::initializeHierarchyIndependentData : "
-                   << "nodesets not set up correctly or don't exist in FE part with ID "
+                   << "nodesets not set up correctly or don't exist in FE part with number "
                    << d_part);
     }
 
