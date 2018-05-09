@@ -2147,7 +2147,7 @@ VCINSStaggeredHierarchyIntegrator::setupSolverVectors(const Pointer<SAMRAIVector
     // Account for internal source/sink distributions.
     if (d_Q_fcn)
     {
-        TBOX_ERROR("Presently not supported for variable coefficient problems");
+        //TBOX_ERROR("Presently not supported for variable coefficient problems");
         d_Q_fcn->setDataOnPatchHierarchy(d_Q_current_idx, d_Q_var, d_hierarchy, current_time);
         d_Q_fcn->setDataOnPatchHierarchy(d_Q_new_idx, d_Q_var, d_hierarchy, new_time);
         d_hier_cc_data_ops->linearSum(d_Q_scratch_idx, 0.5, d_Q_current_idx, 0.5, d_Q_new_idx);
@@ -2289,7 +2289,7 @@ VCINSStaggeredHierarchyIntegrator::resetSolverVectors(const Pointer<SAMRAIVector
     }
     if (d_Q_fcn)
     {
-        TBOX_ERROR("Presently not supported for variable coefficient problems");
+        //TBOX_ERROR("Presently not supported for variable coefficient problems");
         if (d_rho_is_const)
         {
             d_hier_sc_data_ops->axpy(
